@@ -88,6 +88,27 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
 
             <li>
               <NavLink
+                to="/admin/sub-course"
+                className={({ isActive }) =>
+                  isActive ? "active" : ""
+                }
+                onClick={() => setSidebarOpen(false)}
+              >
+
+                <span className="material-icons">
+                  bookmarks
+                </span>
+
+                <span className="nav-text">
+                  Sub Course
+                </span>
+
+              </NavLink>
+            </li>
+
+
+            <li>
+              <NavLink
                 to="/admin/trainer"
                 className={({ isActive }) =>
                   isActive ? "active" : ""
@@ -143,6 +164,69 @@ function AdminSidebar({ sidebarOpen, setSidebarOpen }) {
 
                 <span className="nav-text">
                   Allocate
+                </span>
+
+              </NavLink>
+            </li>
+
+
+            <li>
+              <NavLink
+                to="/admin/student-report"
+                className={({ isActive }) =>
+                  isActive ? "active" : ""
+                }
+                onClick={() => setSidebarOpen(false)}
+              >
+
+                <span className="material-icons">
+                  summarize
+                </span>
+
+                <span className="nav-text">
+                  Student Report
+                </span>
+
+              </NavLink>
+            </li>
+
+
+            <li>
+              <NavLink
+                to="/admin/trainer-report"
+                className={({ isActive }) =>
+                  isActive ? "active" : ""
+                }
+                onClick={() => setSidebarOpen(false)}
+              >
+
+                <span className="material-icons">
+                  assessment
+                </span>
+
+                <span className="nav-text">
+                  Trainer Report
+                </span>
+
+              </NavLink>
+            </li>
+
+
+            <li>
+              <NavLink
+                to="/admin/mcq"
+                className={({ isActive }) =>
+                  isActive ? "active" : ""
+                }
+                onClick={() => setSidebarOpen(false)}
+              >
+
+                <span className="material-icons">
+                  quiz
+                </span>
+
+                <span className="nav-text">
+                  MCQ Test
                 </span>
 
               </NavLink>

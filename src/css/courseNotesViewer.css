@@ -1,0 +1,471 @@
+/* =========================================================
+   COURSE NOTES OVERLAY
+   ========================================================= */
+
+.course-notes-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 30px;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    backdrop-filter: blur(3px);
+}
+
+
+/* =========================================================
+   PDF VIEWER
+   ========================================================= */
+
+.course-notes-viewer {
+    width: 100%;
+    height: 100%;
+
+    max-width: 1400px;
+    max-height: 92vh;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background: #292929;
+
+    border-radius: 6px;
+
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.course-notes-toolbar {
+    min-height: 60px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 18px;
+
+    background: #323232;
+
+    color: #ffffff;
+
+    border-bottom: 1px solid #444;
+}
+
+
+/* =========================================================
+   TOOLBAR TITLE
+   ========================================================= */
+
+.course-notes-toolbar-title {
+    flex: 1;
+
+    font-size: 15px;
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   PAGE INFORMATION
+   ========================================================= */
+
+.course-notes-page-info {
+    min-width: 80px;
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   CONTROLS
+   ========================================================= */
+
+.course-notes-controls {
+    flex: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    gap: 5px;
+}
+
+.course-notes-controls button {
+    width: 36px;
+    height: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 4px;
+
+    background: transparent;
+
+    color: #ffffff;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.course-notes-controls button:hover {
+    background: #4a4a4a;
+}
+
+.course-notes-controls span {
+    min-width: 55px;
+
+    text-align: center;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+.course-notes-controls .course-notes-close {
+    margin-left: 10px;
+
+    font-size: 28px;
+}
+
+.course-notes-controls .course-notes-close:hover {
+    background: #b52b2b;
+}
+
+
+/* =========================================================
+   VIEWER BODY
+   ========================================================= */
+
+.course-notes-body {
+    flex: 1;
+
+    overflow: auto;
+
+    padding: 35px;
+
+    background: #242424;
+}
+
+
+/* =========================================================
+   WHITE DOCUMENT PAGE
+   ========================================================= */
+
+.course-notes-page {
+    width: 850px;
+    min-height: 1100px;
+
+    margin: 0 auto;
+
+    background: #ffffff;
+
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.35);
+
+    transform-origin: top center;
+
+    transition: transform 0.2s ease;
+}
+
+
+/* =========================================================
+   DOCUMENT CONTENT
+   ========================================================= */
+
+.course-notes-page-content {
+    padding: 70px 75px;
+}
+
+
+/* =========================================================
+   TOPIC TITLE
+   ========================================================= */
+
+.course-notes-topic-title {
+    margin: 0 0 35px;
+
+    color: #222222;
+
+    font-size: 32px;
+
+    font-weight: 700;
+
+    line-height: 1.3;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   NOTES CONTENT
+   ========================================================= */
+
+.course-notes-content {
+    color: #333333;
+
+    font-size: 16px;
+
+    line-height: 1.8;
+}
+
+.course-notes-content h3 {
+    margin-top: 30px;
+    margin-bottom: 12px;
+
+    color: #222222;
+
+    font-size: 22px;
+}
+
+.course-notes-content p {
+    margin-bottom: 18px;
+}
+
+.course-notes-content ul {
+    margin-bottom: 20px;
+
+    padding-left: 25px;
+}
+
+.course-notes-content li {
+    margin-bottom: 8px;
+}
+
+
+/* =========================================================
+   CODE BLOCK
+   ========================================================= */
+
+.course-notes-content pre {
+    width: 100%;
+
+    margin: 20px 0 30px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    overflow-x: auto;
+
+    background: #000000;
+
+    color: #ffffff;
+
+    border-radius: 6px;
+
+    font-family: "Courier New", Courier, monospace;
+
+    font-size: 14px;
+
+    line-height: 1.7;
+
+    white-space: pre-wrap;
+}
+
+
+/* =========================================================
+   BOTTOM NAVIGATION
+   ========================================================= */
+
+.course-notes-navigation {
+    min-height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 25px;
+
+    background: #323232;
+
+    color: #ffffff;
+
+    border-top: 1px solid #444;
+}
+
+.course-notes-navigation button {
+    min-width: 120px;
+
+    padding: 9px 18px;
+
+    border: none;
+
+    border-radius: 5px;
+
+    background: #4d44b5;
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+.course-notes-navigation button:hover:not(:disabled) {
+    background: #40389d;
+}
+
+.course-notes-navigation button:disabled {
+    opacity: 0.4;
+
+    cursor: not-allowed;
+}
+
+.course-notes-navigation span {
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .course-notes-overlay {
+        padding: 15px;
+    }
+
+    .course-notes-page {
+        width: 700px;
+    }
+
+    .course-notes-page-content {
+        padding: 55px;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .course-notes-overlay {
+        padding: 0;
+    }
+
+    .course-notes-viewer {
+        max-height: 100vh;
+
+        border-radius: 0;
+    }
+
+    .course-notes-toolbar {
+        min-height: 55px;
+
+        padding: 0 10px;
+    }
+
+    .course-notes-toolbar-title {
+        font-size: 13px;
+    }
+
+    .course-notes-page-info {
+        min-width: 60px;
+
+        font-size: 12px;
+    }
+
+    .course-notes-page {
+        width: 90vw;
+
+        min-height: 1000px;
+    }
+
+    .course-notes-page-content {
+        padding: 40px 30px;
+    }
+
+    .course-notes-topic-title {
+        font-size: 26px;
+    }
+
+    .course-notes-content {
+        font-size: 15px;
+    }
+
+    .course-notes-navigation {
+        padding: 0 12px;
+    }
+
+    .course-notes-navigation button {
+        min-width: 90px;
+
+        padding: 8px 10px;
+
+        font-size: 13px;
+    }
+
+    .course-notes-navigation span {
+        font-size: 12px;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .course-notes-controls span {
+        display: none;
+    }
+
+    .course-notes-controls button {
+        width: 32px;
+        height: 32px;
+    }
+
+    .course-notes-page {
+        width: 92vw;
+    }
+
+    .course-notes-page-content {
+        padding: 30px 20px;
+    }
+
+    .course-notes-topic-title {
+        font-size: 22px;
+    }
+
+    .course-notes-content {
+        font-size: 14px;
+    }
+
+    .course-notes-content h3 {
+        font-size: 19px;
+    }
+
+    .course-notes-content pre {
+        font-size: 12px;
+
+        padding: 15px;
+    }
+
+}

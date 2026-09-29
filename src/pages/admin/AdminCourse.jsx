@@ -2,13 +2,14 @@ import { useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { initialCourses } from "../../data/adminData";
 
+
 import "../../css/dashboard.css";
 import "../../css/theme.css";
 import "../../css/admin.css";
 
 function AdminCourse() {
 
-  const [courses, setCourses] = useState(initialCourses);
+  const [courses, setCourses] = useState(initialCourses); 
   const [view, setView] = useState("list"); // "list" | "form"
   const [editingId, setEditingId] = useState(null);
 
@@ -18,7 +19,7 @@ function AdminCourse() {
     logo: "",
     logoPreview: "",
   });
-
+  
   function resetForm() {
     setForm({ name: "", duration: "", logo: "", logoPreview: "" });
     setEditingId(null);
@@ -202,9 +203,9 @@ function AdminCourse() {
             </button>
 
             <div className="row">
-              <div className="col-lg-6">
+              <div className="col-lg-12">
 
-                <div className="card">
+                <div className="card admin-form-card">
 
                   <div className="card-header">
                     <h4 className="card-title">
@@ -253,8 +254,7 @@ function AdminCourse() {
                         />
                         <p className="admin-form-hint">PNG or JPG, up to 2MB.</p>
 
-                        {form.logoPreview && (
-                          <div className="admin-logo-preview">
+                        {form.logoPreview && (                          <div className="admin-logo-preview">
                             <img src={form.logoPreview} alt="Logo preview" />
                             <span>{form.logo}</span>
                           </div>
@@ -290,5 +290,4 @@ function AdminCourse() {
     </AdminLayout>
   );
 }
-
 export default AdminCourse;

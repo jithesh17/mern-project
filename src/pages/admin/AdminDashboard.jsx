@@ -97,9 +97,15 @@ function AdminDashboard() {
                   Manage Courses
                 </Link>
 
+
+                <Link to="/admin/Subcourse" className="btn btn-success">
+                sub course
+                </Link>
+
+
                 <Link to="/admin/trainer" className="btn btn-info">
                   Manage Trainers
-                </Link>
+                </Link>       
 
                 <Link to="/admin/student" className="btn btn-warning">
                   Manage Students
@@ -108,6 +114,16 @@ function AdminDashboard() {
                 <Link to="/admin/allocate" className="btn btn-success">
                   Allocate Batch
                 </Link>
+
+                <Link to="/admin/student-report" className="btn btn-primary">
+                StudentReport
+                </Link>
+
+                <Link to="/admin/trainer-report" className="btn btn-info">
+                  Trainer report
+                </Link>
+
+              
 
               </div>
 
@@ -123,4 +139,4 @@ function AdminDashboard() {
   );
 }
 
-export default AdminDashboard;
+export default AdminDashboard;      

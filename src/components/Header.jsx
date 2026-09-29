@@ -54,29 +54,33 @@ function Header({ sidebarOpen, setSidebarOpen }) {
      PAGE TITLE
      ========================================================= */
 
- let pageTitle = "DASHBOARD";
+  let pageTitle = "DASHBOARD";
 
-if (location.pathname === "/profile") {
-  pageTitle = "PROFILE";
-} else if (location.pathname === "/course") {
-  pageTitle = "COURSE";
-} else if (location.pathname === "/mcq") {
-  pageTitle = "MCQ TEST";
-} else if (location.pathname === "/trainer/dashboard") {
-  pageTitle = "TRAINER DASHBOARD";
-} else if (location.pathname === "/trainer/attendance") {
-  pageTitle = "ATTENDANCE";
-} else if (location.pathname === "/trainer/reports/batch") {
-  pageTitle = "BATCH REPORT";
-} else if (location.pathname === "/trainer/reports/student") {
-  pageTitle = "STUDENT REPORT";
-} else if (location.pathname === "/trainer/students") {
-  pageTitle = "STUDENTS";
-} else if (location.pathname === "/trainer/batches") {
-  pageTitle = "BATCHES";
-} else if (location.pathname === "/trainer/profile") {
-  pageTitle = "PROFILE";
-}
+  if (location.pathname === "/profile") {
+    pageTitle = "PROFILE";
+  } else if (location.pathname === "/course") {
+    pageTitle = "COURSE";
+  } else if (location.pathname === "/mcq") {
+    pageTitle = "MCQ TEST";
+  } else if (location.pathname.startsWith("/admin/sub-course")) {
+    pageTitle = "SUB COURSE";
+  } else if (location.pathname.startsWith("/admin/course")) {
+    pageTitle = "COURSE";
+  } else if (location.pathname.startsWith("/admin/trainer-report")) {
+    pageTitle = "TRAINER REPORT";
+  } else if (location.pathname.startsWith("/admin/trainer")) {
+    pageTitle = "TRAINER";
+  } else if (location.pathname.startsWith("/admin/student-report")) {
+    pageTitle = "STUDENT REPORT";
+  } else if (location.pathname.startsWith("/admin/student")) {
+    pageTitle = "STUDENT";
+  } else if (location.pathname.startsWith("/admin/allocate")) {
+    pageTitle = "ALLOCATE";
+  } else if (location.pathname.startsWith("/admin/mcq")) {
+    pageTitle = "MCQ TEST";
+  } else if (location.pathname.startsWith("/admin")) {
+    pageTitle = "ADMIN DASHBOARD";
+  }
 
   return (
     <>

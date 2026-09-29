@@ -1,14 +1,21 @@
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
-
+import { useState } from "react";
+import CourseNotesViewer from "../components/CourseNotesViewer";
 import htmlImage from "../assets/images/coures/Hello.jpeg";
 import cssImage from "../assets/images/coures/newcss.jpeg";
 import jsImage from "../assets/images/coures/js.jpeg";
-import reactImage from "../assets/images/coures/react.jpeg";
+import mernImage from "../assets/images/coures/MERN.jpeg";
+import nodeImage from "../assets/images/coures/node.jpeg";
+import expressImage from "../assets/images/coures/express.jpeg";
+import mongoImage from "../assets/images/coures/mongo.jpeg";
+import react from "../assets/images/coures/reactt.jpeg";
 
 import "../css/course.css";
 import "../css/theme.css";
+
 function Course() {
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const courses = [
     {
@@ -18,7 +25,8 @@ function Course() {
       level: "Beginner",
       questions: "20 MCQ Questions",
       time: "15 Minutes",
-      link: "/mcq/html",
+      link: "/course/html",
+      locked: false,
     },
 
     {
@@ -28,7 +36,8 @@ function Course() {
       level: "Beginner",
       questions: "20 MCQ Questions",
       time: "15 Minutes",
-      link: "/mcq/css",
+      link: "/course/css",
+      locked: true,
     },
 
     {
@@ -38,118 +47,152 @@ function Course() {
       level: "Intermediate",
       questions: "20 MCQ Questions",
       time: "20 Minutes",
-      link: "/mcq/javascript",
+      link: "/course/javascript",
+      locked: true,
     },
 
     {
       name: "React",
-      image: reactImage,
+      image: react,
       description: "Build modern single-page applications using React.",
       level: "Intermediate",
       questions: "20 MCQ Questions",
       time: "20 Minutes",
-      link: "/mcq/react",
+      link: "/course/react",
+      locked: true,
+    },
+
+    {
+      name: "Node.js",
+      image: nodeImage,
+      description: "Learn backend development using Node.js.",
+      level: "Intermediate",
+      questions: "20 MCQ Questions",
+      time: "20 Minutes",
+      link: "/course/node",
+      locked: true,
+    },
+
+    {
+      name: "Express.js",
+      image: expressImage,
+      description: "Build backend APIs using Express.js.",
+      level: "Intermediate",
+      questions: "20 MCQ Questions",
+      time: "20 Minutes",
+      link: "/course/express",
+      locked: true,
+    },
+
+    {
+      name: "MongoDB",
+      image: mongoImage,
+      description: "Learn MongoDB and work with application databases.",
+      level: "Intermediate",
+      questions: "20 MCQ Questions",
+      time: "20 Minutes",
+      link: "/course/mongodb",
+      locked: true,
     },
   ];
 
   return (
     <Layout>
-
       <div className="course-page">
+        {/* ============================= */}
+        {/* MERN STACK BANNER */}
+        {/* ============================= */}
 
-        {/* Welcome Section */}
+        <div
+          className="mern-banner"
+          style={{ backgroundImage: `url(${mernImage})` }}
+        ></div>
 
-        <div className="course-welcome">
+        {/* ============================= */}
+        {/* LEARNING PATH */}
+        {/* ============================= */}
 
-          <h2 className="course-welcome-title">
-            Welcome, Learner 👋
-          </h2>
+        <div className="course-section">
+          <div className="course-section-header">
+            <p className="course-learning-text">
+              Complete each course to unlock the next course.
+            </p>
+          </div>
 
-          <p className="course-welcome-text">
-            Choose a course below and start your learning journey.
-          </p>
+          {/* ============================= */}
+          {/* SUB COURSES */}
+          {/* ============================= */}
 
-        </div>
+          <div className="course-grid">
+            {courses.map((course) => (
+              <div
+                className={`course-card ${
+                  course.locked ? "course-locked" : "course-active"
+                }`}
+                key={course.name}
+              >
+                {/* Lock */}
 
+                {course.locked && <div className="course-lock">🔒</div>}
 
-        {/* Course Grid */}
+                {/* Course Image */}
 
-        <div className="course-grid">
+                <img
+                  src={course.image}
+                  alt={course.name}
+                  className="course-card-image"
+                />
 
-          {courses.map((course) => (
+                {/* Course Content */}
 
-            <div
-              className="course-card"
-              key={course.name}
-            >
+                <div className="course-card-content">
+                  <h3 className="course-card-title">{course.name}</h3>
 
-              {/* Image */}
+                  <p className="course-card-description">
+                    {course.description}
+                  </p>
 
-              <img
-                src={course.image}
-                alt={course.name}
-                className="course-card-image"
-              />
+                  {/* Course Details */}
 
+                  <div className="course-card-details">
+                    <p className="course-card-detail">📘 {course.level}</p>
 
-              {/* Content */}
+                    <p className="course-card-detail">📝 {course.questions}</p>
 
-              <div className="course-card-content">
+                    <p className="course-card-detail">⏱ {course.time}</p>
+                  </div>
 
-                <h3 className="course-card-title">
-                  {course.name}
-                </h3>
+                  {/* Button */}
 
-
-                <p className="course-card-description">
-                  {course.description}
-                </p>
-
-
-                {/* Rating */}
-
-                <div className="course-card-rating">
-                  ⭐⭐⭐⭐⭐
+                  {!course.locked ? (
+                    <button
+                      type="button"
+                      className="course-card-button"
+                      onClick={() => setNotesOpen(true)}
+                    >
+                      Start Learning →
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="course-card-button course-locked-button"
+                      disabled
+                    >
+                      🔒 Locked
+                    </button>
+                  )}
                 </div>
-
-
-                {/* Details */}
-
-                <div className="course-card-details">
-
-                  <p className="course-card-detail">
-                    📘 {course.level}
-                  </p>
-
-                  <p className="course-card-detail">
-                    📝 {course.questions}
-                  </p>
-
-                  <p className="course-card-detail">
-                    ⏱ {course.time}
-                  </p>
-
-                </div>
-
-
-                {/* Start Learning */}
-
-                <Link
-                  to={course.link}
-                  className="course-card-button"
-                >
-                  Start Learning →
-                </Link>
-
               </div>
-
-            </div>
-
-          ))}
-
+            ))}
+          </div>
         </div>
-
       </div>
+     {notesOpen && (
+    <CourseNotesViewer
+        course="html"
+        onClose={() => setNotesOpen(false)}
+    />
+)}
 
     </Layout>
   );

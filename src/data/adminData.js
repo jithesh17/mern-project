@@ -92,3 +92,56 @@ export const initialAllocations = [
     status: "Active",
   },
 ];
+
+/* =========================================================
+   SUB COURSE — topics/modules under a main course
+   e.g. Course "MERN" -> Sub Courses: HTML, CSS, JS
+   ========================================================= */
+
+export const initialSubCourses = [
+  {
+    id: 1,
+    sno: 1,
+    course: "React",
+    sub: "HTML",
+    description: "Basics of HTML tags, forms and semantic markup.",
+    image: "",
+  },
+  {
+    id: 2,
+    sno: 2,
+    course: "React",
+    sub: "CSS",
+    description: "Styling, flexbox, grid and responsive design.",
+    image: "",
+  },
+  {
+    id: 3,
+    sno: 3,
+    course: "React",
+    sub: "JS",
+    description: "Core JavaScript concepts before moving into React.",
+    image: "",
+  },
+];
+
+/* =========================================================
+   MCQ TEST — quiz questions per Course / Sub Course
+   ========================================================= */
+
+export const answerOptions = ["A", "B", "C", "D"];
+
+export const initialMCQs = [
+  {
+    id: 1,
+    sno: 1,
+    course: "React",
+    subCourse: "HTML",
+    question: "Which tag is used to create a hyperlink in HTML?",
+    optionA: "<link>",
+    optionB: "<a>",
+    optionC: "<href>",
+    optionD: "<hyper>",
+    correctAnswer: "B",
+  },
+];

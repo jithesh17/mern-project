@@ -1,15 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Register from "./pages/Register";
-import Login from "./pages/Login";
+import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import Course from "./pages/Course";
+import Profile from "./pages/Profile"
+import Course from "./pages/Course"
 import MCQ from "./pages/MCQ";
+
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCourse from "./pages/admin/AdminCourse";
+import AdminSubCourse from "./pages/admin/AdminSubCourse";
 import AdminTrainer from "./pages/admin/AdminTrainer";
 import AdminStudent from "./pages/admin/AdminStudent";
 import AdminAllocate from "./pages/admin/AdminAllocate";
+import AdminStudentReport from "./pages/admin/AdminStudentReport";
+import AdminTrainerReport from "./pages/admin/AdminTrainerReport";
+import AdminMCQ from "./pages/admin/AdminMCQ";
+
 import TrainerLogin from "./pages/TrainerLogin";
 import TrainerDashboard from "./pages/trainer/TrainerDashboard";
 import TrainerLayout from "./components/TrainerLayout";
@@ -19,62 +25,65 @@ import StudentReport from "./pages/trainer/StudentReport";
 import Students from "./pages/trainer/Students";
 import Batches from "./pages/trainer/Batches";
 import TrainerProfile from "./pages/trainer/TrainerProfile";
+import CourseContent from "./pages/CourseContent";
+
+
 
 function App() {
-
-
-  
-//  return (
-    // <div>
-    //   <UserForm />
-
-    //   <hr />
-
-    //   <UserDetails />
-    // </div>
-  
   return (
-    <BrowserRouter>
+    <BrowserRouter>  
       <Routes>
-        {/* <Route
+        
+        <Route
           path="/"
           element={<h1>BNR LMS Home</h1>}
-        /> */}
+        />
 
-        <Route path="/course" element={<Course />} />
+        <Route
+          path="/course"
+          element={<Course/>}
+        />
 
-        <Route path="/" element={<Login />} />
-        <Route path="/" element={<h1>BNR LMS Home</h1>} />
+        <Route
+          path="/login"
+          element={<Login/>}
+        />
 
-        <Route path="/course" element={<Course />} />
 
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/register"
+          element={<Register />}
+        />
 
-        <Route path="/register" element={<Register />} />
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
 
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile" element={<Profile />} />
+         <Route
+          path="/profile"
+          element={<Profile/>}
+        />
 
         <Route path="/mcq/:course" element={<MCQ />} />
+        <Route path="/course/:course/:topic" element={<CourseContent/>}/>
 
-        {/*admin routes */}
+
+        {/* ===================== ADMIN MODULE ===================== */}
 
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/course" element={<AdminCourse />} />
+        <Route path="/admin/sub-course" element={<AdminSubCourse />} />
         <Route path="/admin/trainer" element={<AdminTrainer />} />
         <Route path="/admin/student" element={<AdminStudent />} />
         <Route path="/admin/allocate" element={<AdminAllocate />} />
+        <Route path="/admin/student-report" element={<AdminStudentReport />} />
+        <Route path="/admin/trainer-report" element={<AdminTrainerReport />} />
+        <Route path="/admin/mcq" element={<AdminMCQ />} />
 
-        {/*trainer routes */}
 
-        <Route path="/trainer/login" element={<TrainerLogin />} />
-
-        <Route path="/trainer/login" element={<TrainerLogin />} />
+<Route path="/trainer/login" element={<TrainerLogin />} />
 
         <Route
           path="/trainer/dashboard"
@@ -134,12 +143,12 @@ function App() {
               <TrainerProfile />
             </TrainerLayout>
           }
-        />
+          />
+
+
       </Routes>
     </BrowserRouter>
   );
 }
-
-
 
 export default App;
