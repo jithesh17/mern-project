@@ -1,110 +1,365 @@
-import { useState } from "react";
-import AdminLayout from "../../components/AdminLayout";
-import { initialCourses } from "../../data/adminData";
+import { useEffect, useState } from "react";
 
+import AdminLayout from "../../components/AdminLayout";
 
 import "../../css/dashboard.css";
 import "../../css/theme.css";
 import "../../css/admin.css";
 
 function AdminCourse() {
+  // =====================================================
+  // API
+  // =====================================================
 
-  const [courses, setCourses] = useState(initialCourses); 
-  const [view, setView] = useState("list"); // "list" | "form"
-  const [editingId, setEditingId] = useState(null);
+  const API_URL = "http://localhost:5000/api/courses";
+
+  const API_BASE_URL = "http://localhost:5000";
+
+  // =====================================================
+  // STATE
+  // =====================================================
+
+  const [courses, setCourses] = useState([]);
+
+  const [view, setView] = useState("list");
+
+  const [loading, setLoading] = useState(false);
+
+  const [saving, setSaving] = useState(false);
+
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
     duration: "",
     logo: "",
+    logoFile: null,
     logoPreview: "",
   });
-  
-  function resetForm() {
-    setForm({ name: "", duration: "", logo: "", logoPreview: "" });
-    setEditingId(null);
+
+  // =====================================================
+  // GET COURSES
+  // =====================================================
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  async function fetchCourses() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(API_URL, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch courses");
+      }
+
+      const data = await response.json();
+
+      console.log("GET courses response:", data);
+
+      if (Array.isArray(data)) {
+        setCourses(data);
+      } else {
+        setCourses([]);
+        throw new Error("Invalid courses response");
+      }
+    } catch (error) {
+      console.error("Fetch courses error:", error);
+
+      setError(
+        error.message || "Unable to load courses."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
+
+  // =====================================================
+  // RESET FORM
+  // =====================================================
+
+  function resetForm() {
+    setForm({
+      name: "",
+      duration: "",
+      logo: "",
+      logoFile: null,
+      logoPreview: "",
+    });
+  }
+
+  // =====================================================
+  // OPEN CREATE FORM
+  // =====================================================
 
   function openCreateForm() {
     resetForm();
+    setError("");
     setView("form");
   }
 
-  function openEditForm(course) {
-    setForm({
-      name: course.name,
-      duration: course.duration,
-      logo: course.logo,
-      logoPreview: course.logo,
-    });
-    setEditingId(course.id);
-    setView("form");
+  // =====================================================
+  // BACK TO LIST
+  // =====================================================
+
+  function handleBack() {
+    resetForm();
+    setError("");
+    setView("list");
   }
+
+  // =====================================================
+  // TEXT INPUT CHANGE
+  // =====================================================
 
   function handleChange(event) {
     const { name, value } = event.target;
-    setForm((previous) => ({ ...previous, [name]: value }));
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
   }
+
+  // =====================================================
+  // LOGO CHANGE
+  // =====================================================
 
   function handleLogoChange(event) {
     const file = event.target.files[0];
-    if (!file) return;
+
+    if (!file) {
+      return;
+    }
+
+    // ---------------------------------------------
+    // Validate file type
+    // ---------------------------------------------
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Please select a PNG or JPG image.");
+
+      event.target.value = "";
+
+      return;
+    }
+
+    // ---------------------------------------------
+    // Validate file size
+    // 2MB
+    // ---------------------------------------------
+
+    const maxSize = 2 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      alert("Logo size must be less than 2MB.");
+
+      event.target.value = "";
+
+      return;
+    }
+
+    // ---------------------------------------------
+    // Preview
+    // ---------------------------------------------
 
     const previewUrl = URL.createObjectURL(file);
+
     setForm((previous) => ({
       ...previous,
       logo: file.name,
+      logoFile: file,
       logoPreview: previewUrl,
     }));
   }
 
-  function handleSave(event) {
+  // =====================================================
+  // SAVE COURSE
+  // =====================================================
+
+  async function handleSave(event) {
     event.preventDefault();
 
-    if (!form.name.trim() || !form.duration.trim()) {
+    // ---------------------------------------------
+    // Validation
+    // ---------------------------------------------
+
+    if (!form.name.trim()) {
+      alert("Please enter the course name.");
       return;
     }
 
-    if (editingId) {
-      setCourses((previous) =>
-        previous.map((course) =>
-          course.id === editingId
-            ? { ...course, name: form.name, duration: form.duration, logo: form.logo }
-            : course
-        )
-      );
-    } else {
-      setCourses((previous) => [
-        ...previous,
-        {
-          id: Date.now(),
-          name: form.name,
-          duration: form.duration,
-          logo: form.logo,
-        },
-      ]);
+    if (!form.duration.trim()) {
+      alert("Please enter the duration.");
+      return;
     }
 
-    resetForm();
-    setView("list");
+    if (!form.logoFile) {
+      alert("Please select a course logo.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+
+      // ---------------------------------------------
+      // Create FormData
+      // ---------------------------------------------
+
+      const formData = new FormData();
+
+      // IMPORTANT:
+      // These names must match your backend
+      // and Postman request.
+
+      formData.append("course", form.name.trim());
+
+      formData.append(
+        "duration",
+        form.duration.trim()
+      );
+
+      formData.append(
+        "logo",
+        form.logoFile
+      );
+
+      // ---------------------------------------------
+      // POST API
+      // ---------------------------------------------
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      console.log("POST course response:", data);
+
+      // ---------------------------------------------
+      // API ERROR
+      // ---------------------------------------------
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to create course"
+        );
+      }
+
+      // ---------------------------------------------
+      // SUCCESS
+      // ---------------------------------------------
+
+      alert(
+        data.message ||
+          "Course created successfully"
+      );
+
+      // ---------------------------------------------
+      // Reset form
+      // ---------------------------------------------
+
+      resetForm();
+
+      // ---------------------------------------------
+      // Go back to list
+      // ---------------------------------------------
+
+      setView("list");
+
+      // ---------------------------------------------
+      // Fetch latest courses
+      // ---------------------------------------------
+
+      await fetchCourses();
+
+    } catch (error) {
+      console.error(
+        "Create course error:",
+        error
+      );
+
+      setError(
+        error.message ||
+          "Something went wrong while creating the course."
+      );
+
+      alert(
+        error.message ||
+          "Something went wrong while creating the course."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleDelete(id) {
-    setCourses((previous) => previous.filter((course) => course.id !== id));
+  // =====================================================
+  // IMAGE URL
+  // =====================================================
+
+  function getLogoUrl(logo) {
+    if (!logo) {
+      return "";
+    }
+
+    // If backend returns full URL
+    if (
+      logo.startsWith("http://") ||
+      logo.startsWith("https://")
+    ) {
+      return logo;
+    }
+
+    // Backend returns:
+    //
+    // /uploads/courses/example.jpeg
+    //
+    // Convert to:
+    //
+    // http://localhost:5000/uploads/courses/example.jpeg
+
+    return `${API_BASE_URL}${logo}`;
   }
+
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
     <AdminLayout>
 
       <div className="admin-page">
 
+        {/* ================================================= */}
+        {/* LIST VIEW */}
+        {/* ================================================= */}
+
         {view === "list" && (
           <>
+
+            {/* PAGE HEADER */}
+
             <div className="admin-page-header">
 
               <div>
                 <h2>Course</h2>
-                <p>All courses offered by the academy.</p>
+
+                <p>
+                  All courses offered by the academy.
+                </p>
               </div>
 
               <button
@@ -112,73 +367,188 @@ function AdminCourse() {
                 className="btn btn-primary admin-create-btn"
                 onClick={openCreateForm}
               >
-                <span className="material-icons">add</span>
+                <span className="material-icons">
+                  add
+                </span>
+
                 Create
               </button>
 
             </div>
 
+
+            {/* ERROR */}
+
+            {error && (
+              <div
+                className="alert alert-danger"
+                style={{
+                  marginBottom: "20px",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+
             <div className="row">
+
               <div className="col-lg-12">
 
                 <div className="card">
 
                   <div className="card-body">
 
-                    {courses.length === 0 ? (
+                    {/* ================================================= */}
+                    {/* LOADING */}
+                    {/* ================================================= */}
+
+                    {loading ? (
                       <div className="admin-empty">
-                        <span className="material-icons">menu_book</span>
-                        <p>No courses yet. Click Create to add one.</p>
+
+                        <span className="material-icons">
+                          sync
+                        </span>
+
+                        <p>
+                          Loading courses...
+                        </p>
+
                       </div>
+                    ) : courses.length === 0 ? (
+
+                      /* ================================================= */
+                      /* EMPTY */
+                      /* ================================================= */
+
+                      <div className="admin-empty">
+
+                        <span className="material-icons">
+                          menu_book
+                        </span>
+
+                        <p>
+                          No courses yet.
+                          Click Create to add one.
+                        </p>
+
+                      </div>
+
                     ) : (
+
+                      /* ================================================= */
+                      /* TABLE */
+                      /* ================================================= */
+
                       <table className="table table-hover">
 
                         <thead>
+
                           <tr>
-                            <th>Course</th>
-                            <th>Duration</th>
-                            <th>Logo</th>
-                            <th>Actions</th>
+
+                            <th>
+                              Course
+                            </th>
+
+                            <th>
+                              Duration
+                            </th>
+
+                            <th>
+                              Logo
+                            </th>
+
+                            <th>
+                              Preview
+                            </th>
+
                           </tr>
+
                         </thead>
 
+
                         <tbody>
+
                           {courses.map((course) => (
-                            <tr key={course.id}>
-                              <td>{course.name}</td>
-                              <td>{course.duration}</td>
+
+                            <tr
+                              key={course._id}
+                            >
+
+                              {/* COURSE */}
+
                               <td>
+                                {course.course}
+                              </td>
+
+
+                              {/* DURATION */}
+
+                              <td>
+                                {course.duration}
+                              </td>
+
+
+                              {/* LOGO NAME */}
+
+                              <td>
+
                                 {course.logo ? (
-                                  <span className="badge badge-info">{course.logo}</span>
+                                  <span className="badge badge-info">
+                                    {course.logo
+                                      .split("/")
+                                      .pop()}
+                                  </span>
                                 ) : (
-                                  <span className="badge badge-warning">No logo</span>
+                                  <span className="badge badge-warning">
+                                    No logo
+                                  </span>
                                 )}
+
                               </td>
+
+
+                              {/* IMAGE */}
+
                               <td>
-                                <div className="admin-table-actions">
-                                  <button
-                                    type="button"
-                                    className="admin-icon-btn"
-                                    onClick={() => openEditForm(course)}
-                                    aria-label="Edit course"
-                                  >
-                                    <span className="material-icons">edit</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="admin-icon-btn"
-                                    onClick={() => handleDelete(course.id)}
-                                    aria-label="Delete course"
-                                  >
-                                    <span className="material-icons">delete</span>
-                                  </button>
-                                </div>
+
+                                {course.logo ? (
+
+                                  <img
+                                    src={getLogoUrl(
+                                      course.logo
+                                    )}
+                                    alt={
+                                      course.course
+                                    }
+                                    style={{
+                                      width: "60px",
+                                      height: "60px",
+                                      objectFit:
+                                        "cover",
+                                      borderRadius:
+                                        "8px",
+                                    }}
+                                  />
+
+                                ) : (
+
+                                  <span>
+                                    No image
+                                  </span>
+
+                                )}
+
                               </td>
+
                             </tr>
+
                           ))}
+
                         </tbody>
 
                       </table>
+
                     )}
 
                   </div>
@@ -186,92 +556,197 @@ function AdminCourse() {
                 </div>
 
               </div>
+
             </div>
+
           </>
         )}
 
 
+        {/* ================================================= */}
+        {/* CREATE FORM */}
+        {/* ================================================= */}
+
         {view === "form" && (
           <>
+
+            {/* BACK */}
+
             <button
               type="button"
               className="admin-back-link"
-              onClick={() => { resetForm(); setView("list"); }}
+              onClick={handleBack}
+              disabled={saving}
             >
-              <span className="material-icons">arrow_back</span>
+
+              <span className="material-icons">
+                arrow_back
+              </span>
+
               Back to Courses
+
             </button>
 
+
             <div className="row">
+
               <div className="col-lg-12">
 
                 <div className="card admin-form-card">
 
+
+                  {/* HEADER */}
+
                   <div className="card-header">
+
                     <h4 className="card-title">
-                      {editingId ? "Edit Course" : "Create Course"}
+                      Create Course
                     </h4>
+
                   </div>
+
+
+                  {/* BODY */}
 
                   <div className="card-body">
 
-                    <form onSubmit={handleSave}>
+                    <form
+                      onSubmit={handleSave}
+                    >
+
+
+                      {/* ================================================= */}
+                      {/* COURSE */}
+                      {/* ================================================= */}
 
                       <div className="admin-form-group">
-                        <label htmlFor="course-name">Course</label>
+
+                        <label htmlFor="course-name">
+                          Course
+                        </label>
+
                         <input
                           id="course-name"
                           name="name"
                           type="text"
                           placeholder="e.g. React"
                           value={form.name}
-                          onChange={handleChange}
+                          onChange={
+                            handleChange
+                          }
+                          disabled={saving}
                           required
                         />
+
                       </div>
 
+
+                      {/* ================================================= */}
+                      {/* DURATION */}
+                      {/* ================================================= */}
+
                       <div className="admin-form-group">
-                        <label htmlFor="course-duration">Duration</label>
+
+                        <label htmlFor="course-duration">
+                          Duration
+                        </label>
+
                         <input
                           id="course-duration"
                           name="duration"
                           type="text"
                           placeholder="e.g. 4 Weeks"
-                          value={form.duration}
-                          onChange={handleChange}
+                          value={
+                            form.duration
+                          }
+                          onChange={
+                            handleChange
+                          }
+                          disabled={saving}
                           required
                         />
+
                       </div>
 
+
+                      {/* ================================================= */}
+                      {/* LOGO */}
+                      {/* ================================================= */}
+
                       <div className="admin-form-group">
-                        <label htmlFor="course-logo">Logo</label>
+
+                        <label htmlFor="course-logo">
+                          Logo
+                        </label>
+
                         <input
                           id="course-logo"
                           name="logo"
                           type="file"
-                          accept="image/*"
-                          onChange={handleLogoChange}
+                          accept="image/png,image/jpeg"
+                          onChange={
+                            handleLogoChange
+                          }
+                          disabled={saving}
                         />
-                        <p className="admin-form-hint">PNG or JPG, up to 2MB.</p>
 
-                        {form.logoPreview && (                          <div className="admin-logo-preview">
-                            <img src={form.logoPreview} alt="Logo preview" />
-                            <span>{form.logo}</span>
+                        <p className="admin-form-hint">
+                          PNG or JPG, up to 2MB.
+                        </p>
+
+
+                        {/* IMAGE PREVIEW */}
+
+                        {form.logoPreview && (
+
+                          <div className="admin-logo-preview">
+
+                            <img
+                              src={
+                                form.logoPreview
+                              }
+                              alt="Logo preview"
+                            />
+
+                            <span>
+                              {form.logo}
+                            </span>
+
                           </div>
+
                         )}
+
                       </div>
 
+
+                      {/* ================================================= */}
+                      {/* BUTTONS */}
+                      {/* ================================================= */}
+
                       <div className="admin-form-actions">
-                        <button type="submit" className="btn btn-primary">
-                          Save
+
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={saving}
+                        >
+
+                          {saving
+                            ? "Saving..."
+                            : "Save"}
+
                         </button>
+
+
                         <button
                           type="button"
                           className="btn btn-light"
-                          onClick={() => { resetForm(); setView("list"); }}
+                          onClick={handleBack}
+                          disabled={saving}
                         >
                           Cancel
                         </button>
+
                       </div>
 
                     </form>
@@ -281,7 +756,9 @@ function AdminCourse() {
                 </div>
 
               </div>
+
             </div>
+
           </>
         )}
 
@@ -290,4 +767,5 @@ function AdminCourse() {
     </AdminLayout>
   );
 }
+
 export default AdminCourse;

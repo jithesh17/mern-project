@@ -8,6 +8,7 @@ import MCQ from "./pages/MCQ";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCourse from "./pages/admin/AdminCourse";
+import AdminCreateCourse from "./pages/admin/AdminCreateCourse";
 import AdminSubCourse from "./pages/admin/AdminSubCourse";
 import AdminTrainer from "./pages/admin/AdminTrainer";
 import AdminStudent from "./pages/admin/AdminStudent";
@@ -31,9 +32,9 @@ import CourseContent from "./pages/CourseContent";
 
 function App() {
   return (
-    <BrowserRouter>  
+    <BrowserRouter>
       <Routes>
-        
+
         <Route
           path="/"
           element={<h1>BNR LMS Home</h1>}
@@ -41,12 +42,12 @@ function App() {
 
         <Route
           path="/course"
-          element={<Course/>}
+          element={<Course />}
         />
 
         <Route
           path="/login"
-          element={<Login/>}
+          element={<Login />}
         />
 
 
@@ -60,13 +61,14 @@ function App() {
           element={<Dashboard />}
         />
 
-         <Route
+        <Route
           path="/profile"
-          element={<Profile/>}
+          element={<Profile />}
         />
 
         <Route path="/mcq/:course" element={<MCQ />} />
-        <Route path="/course/:course/:topic" element={<CourseContent/>}/>
+        <Route path="/course/:course/:topic" element={<CourseContent />} />
+
 
 
         {/* ===================== ADMIN MODULE ===================== */}
@@ -74,6 +76,8 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/course" element={<AdminCourse />} />
+        <Route path="/admin/course/create" element={<AdminCreateCourse />} />
+
         <Route path="/admin/sub-course" element={<AdminSubCourse />} />
         <Route path="/admin/trainer" element={<AdminTrainer />} />
         <Route path="/admin/student" element={<AdminStudent />} />
@@ -83,7 +87,21 @@ function App() {
         <Route path="/admin/mcq" element={<AdminMCQ />} />
 
 
-<Route path="/trainer/login" element={<TrainerLogin />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+
+
+
+        <Route
+          path="/admin/sub-course"
+          element={<AdminSubCourse />}
+        />
+
+
+
+        <Route path="/trainer/login" element={<TrainerLogin />} />
 
         <Route
           path="/trainer/dashboard"
@@ -143,7 +161,7 @@ function App() {
               <TrainerProfile />
             </TrainerLayout>
           }
-          />
+        />
 
 
       </Routes>
