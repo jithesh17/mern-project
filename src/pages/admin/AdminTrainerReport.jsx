@@ -182,7 +182,7 @@ function AdminTrainerReport() {
                         <th>Status</th>
                       </tr>
                     </thead>
-
+                    
                     <tbody>
                       {trainerRows.map((trainer) => (
                         <tr key={trainer.id}>

@@ -11,8 +11,12 @@ import AdminCourse from "./pages/admin/AdminCourse";
 import AdminCreateCourse from "./pages/admin/AdminCreateCourse";
 import AdminSubCourse from "./pages/admin/AdminSubCourse";
 import AdminTrainer from "./pages/admin/AdminTrainer";
+import AdminCreateTrainer from "./pages/admin/AdminCreateTrainer";
+import AdminEditTrainer from "./pages/admin/AdminEditTrainer";
 import AdminStudent from "./pages/admin/AdminStudent";
 import AdminAllocate from "./pages/admin/AdminAllocate";
+import AdminCreateAllocate from "./pages/admin/AdminCreateAllocate";
+import AdminEditAllocation from "./pages/admin/AdminEditAllocation";
 import AdminStudentReport from "./pages/admin/AdminStudentReport";
 import AdminTrainerReport from "./pages/admin/AdminTrainerReport";
 import AdminMCQ from "./pages/admin/AdminMCQ";
@@ -83,6 +87,41 @@ function App() {
         <Route path="/admin/student/upload" element={<UploadStudents />} />
 
         <Route path="/admin/sub-course" element={<AdminSubCourse />} />
+
+        <Route
+  path="/admin/trainer"
+  element={<AdminTrainer />}
+/>
+
+<Route
+  path="/admin/trainer/create"
+  element={<AdminCreateTrainer />}
+/>
+
+
+<Route
+  path="/admin/trainer/edit/:id"
+  element={<AdminEditTrainer />}
+/>
+
+
+
+<Route
+  path="/admin/allocate/create"
+  element={<AdminCreateAllocate />}
+/>
+
+<Route
+  path="/admin/allocate/edit/:id"
+  element={<AdminEditAllocation />}
+/>
+
+        <Route
+          path="/admin/sub-course"
+          element={<AdminSubCourse />}
+        />
+
+
 
         <Route path="/trainer/login" element={<TrainerLogin />} />
 

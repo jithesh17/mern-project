@@ -49,12 +49,7 @@ export const initialTrainers = [
   },
 ];
 
-export const departments = [
-  "Front End",
-  "Back End",
-  "Full Stack",
-  "QA / Testing",
-  "Data Science",
+export const course = [
 ];
 
 export const initialStudents = [
