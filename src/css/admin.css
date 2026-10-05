@@ -180,7 +180,7 @@
 .admin-page-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content:space-between;
   flex-wrap: wrap;
   gap: 12px;
 
@@ -203,7 +203,7 @@
 .admin-create-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
 
   border: none;
   cursor: pointer;
@@ -343,7 +343,7 @@
    ========================================================= */
 
 .admin-form-card {
-  max-width: 760px;
+  max-width: none;
   width: 100%;
 }
 
@@ -553,6 +553,12 @@
   text-align: center;
   padding: 40px 20px;
   color: #9598b3;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .admin-empty .material-icons {

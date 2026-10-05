@@ -1,369 +1,231 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import AdminLayout from "../../components/AdminLayout";
-import {
-  initialMCQs,
-  initialCourses,
-  initialSubCourses,
-  answerOptions,
-} from "../../data/adminData";
 
 import "../../css/dashboard.css";
 import "../../css/theme.css";
 import "../../css/admin.css";
 
-const emptyForm = {
-  course: initialCourses[0]?.name || "",
-  subCourse: "",
-  question: "",
-  optionA: "",
-  optionB: "",
-  optionC: "",
-  optionD: "",
-  correctAnswer: "A",
-};
-
 function AdminMCQ() {
+  const navigate = useNavigate();
 
-  const [mcqs, setMcqs] = useState(initialMCQs);
-  const [view, setView] = useState("list"); // "list" | "form"
-  const [editingId, setEditingId] = useState(null);
+  const [mcqs, setMcqs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [form, setForm] = useState(emptyForm);
+  // ==================================================
+  // GET ALL MCQs
+  // ==================================================
 
-  const subCourseOptions = initialSubCourses.filter(
-    (subCourse) => subCourse.course === form.course
-  );
+  const fetchMCQs = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  function resetForm() {
-    setForm(emptyForm);
-    setEditingId(null);
-  }
+      const response = await fetch("http://localhost:5000/api/mcq");
 
-  function openCreateForm() {
-    resetForm();
-    setView("form");
-  }
+      if (!response.ok) {
+        throw new Error("Failed to fetch MCQs");
+      }
 
-  function openEditForm(mcq) {
-    setForm({
-      course: mcq.course,
-      subCourse: mcq.subCourse,
-      question: mcq.question,
-      optionA: mcq.optionA,
-      optionB: mcq.optionB,
-      optionC: mcq.optionC,
-      optionD: mcq.optionD,
-      correctAnswer: mcq.correctAnswer,
-    });
-    setEditingId(mcq.id);
-    setView("form");
-  }
+      const data = await response.json();
 
-  function handleChange(event) {
-    const { name, value } = event.target;
+      setMcqs(data);
+    } catch (error) {
+      console.error("Fetch MCQs error:", error);
 
-    if (name === "course") {
-      setForm((previous) => ({ ...previous, course: value, subCourse: "" }));
-      return;
+      setError("Unable to load MCQ questions. Please check the backend.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setForm((previous) => ({ ...previous, [name]: value }));
-  }
+  // ==================================================
+  // LOAD MCQs WHEN PAGE OPENS
+  // ==================================================
 
-  function handleSave(event) {
-    event.preventDefault();
+  useEffect(() => {
+    fetchMCQs();
+  }, []);
 
-    if (!form.course || !form.subCourse || !form.question.trim()) {
-      return;
-    }
+  // ==================================================
+  // CREATE
+  // ==================================================
 
-    if (editingId) {
-      setMcqs((previous) =>
-        previous.map((mcq) =>
-          mcq.id === editingId ? { ...mcq, ...form } : mcq
-        )
-      );
-    } else {
-      setMcqs((previous) => [
-        ...previous,
-        { id: Date.now(), sno: previous.length + 1, ...form },
-      ]);
-    }
+  const handleCreate = () => {
+    navigate("/admin/mcq/create");
+  };
 
-    resetForm();
-    setView("list");
-  }
+  // ==================================================
+  // EDIT
+  // ==================================================
 
-  function handleDelete(id) {
-    setMcqs((previous) =>
-      previous
-        .filter((mcq) => mcq.id !== id)
-        .map((mcq, index) => ({ ...mcq, sno: index + 1 }))
+  const handleEdit = (id) => {
+    navigate(`/admin/mcq/edit/${id}`);
+  };
+
+  // ==================================================
+  // DELETE
+  // ==================================================
+
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this MCQ?",
     );
-  }
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/mcq/${id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to delete MCQ");
+      }
+
+      alert("MCQ deleted successfully.");
+
+      // Refresh list
+      fetchMCQs();
+    } catch (error) {
+      console.error("Delete MCQ error:", error);
+
+      alert(error.message || "Unable to delete MCQ.");
+    }
+  };
 
   return (
     <AdminLayout>
-
       <div className="admin-page">
+        {/* ============================= */}
+        {/* PAGE HEADER */}
+        {/* ============================= */}
 
-        {view === "list" && (
-          <>
-            <div className="admin-page-header">
+        <div className="admin-page-header">
+          <div>
+            <h2>MCQ Test</h2>
 
-              <div>
-                <h2>MCQ Test</h2>
-                <p>Quiz questions per course and sub course.</p>
-              </div>
+            <p>Quiz questions per course and sub course.</p>
+          </div>
 
-              <button
-                type="button"
-                className="btn btn-primary admin-create-btn"
-                onClick={openCreateForm}
-              >
-                <span className="material-icons">add</span>
-                MCQ
-              </button>
+          <button
+            type="button"
+            className="btn btn-primary admin-create-btn"
+            onClick={handleCreate}
+          >
+            <span className="material-icons">add</span>
+            CREATE MCQ
+          </button>
+        </div>
 
-            </div>
+        {/* ============================= */}
+        {/* ERROR */}
+        {/* ============================= */}
 
-            <div className="row">
-              <div className="col-lg-12">
+        {error && <div className="alert alert-danger">{error}</div>}
 
-                <div className="card">
+        {/* ============================= */}
+        {/* TABLE */}
+        {/* ============================= */}
 
-                  <div className="card-body">
+        <div className="row">
+          <div className="col-lg-12">
+            <div className="card">
+              <div className="card-body">
+                {/* LOADING */}
 
-                    {mcqs.length === 0 ? (
-                      <div className="admin-empty">
-                        <span className="material-icons">quiz</span>
-                        <p>No MCQ questions yet. Click Create to add one.</p>
-                      </div>
-                    ) : (
-                      <table className="table table-hover">
+                {loading ? (
+                  <div className="admin-empty">
+                    <span className="material-icons">sync</span>
 
-                        <thead>
-                          <tr>
-                            <th>S.No</th>
-                            <th>Course</th>
-                            <th>Sub Course</th>
-                            <th>Question</th>
-                            <th>Actions</th>
+                    <p>Loading MCQs...</p>
+                  </div>
+                ) : mcqs.length === 0 ? (
+                  /* EMPTY */
+
+                  <div className="admin-empty">
+                    <span className="material-icons">quiz</span>
+
+                    <p>No MCQ questions yet. Click MCQ to create one.</p>
+                  </div>
+                ) : (
+                  /* TABLE */
+
+                  <div className="table-responsive">
+                    <table className="table table-hover">
+                      <thead>
+                        <tr>
+                          <th>S.No</th>
+
+                          <th>Course</th>
+
+                          <th>Sub Course</th>
+
+                          <th>Question</th>
+
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {mcqs.map((mcq, index) => (
+                          <tr key={mcq._id}>
+                            <td>{index + 1}</td>
+
+                            <td>
+                              <span className="badge badge-primary">
+                                {mcq.course?.course || "N/A"}
+                              </span>
+                            </td>
+
+                            <td>{mcq.subCourse?.sub || "N/A"}</td>
+
+                            <td>{mcq.question}</td>
+
+                            <td>
+                              <div className="admin-table-actions">
+                                {/* EDIT */}
+
+                                <button
+                                  type="button"
+                                  className="admin-icon-btn"
+                                  onClick={() => handleEdit(mcq._id)}
+                                  aria-label="Edit question"
+                                  title="Edit MCQ"
+                                >
+                                  <span className="material-icons">edit</span>
+                                </button>
+
+                                {/* DELETE */}
+
+                                <button
+                                  type="button"
+                                  className="admin-icon-btn"
+                                  onClick={() => handleDelete(mcq._id)}
+                                  aria-label="Delete question"
+                                  title="Delete MCQ"
+                                >
+                                  <span className="material-icons">delete</span>
+                                </button>
+                              </div>
+                            </td>
                           </tr>
-                        </thead>
-
-                        <tbody>
-                          {mcqs.map((mcq) => (
-                            <tr key={mcq.id}>
-                              <td>{mcq.sno}</td>
-                              <td>
-                                <span className="badge badge-primary">{mcq.course}</span>
-                              </td>
-                              <td>{mcq.subCourse}</td>
-                              <td>{mcq.question}</td>
-                              <td>
-                                <div className="admin-table-actions">
-                                  <button
-                                    type="button"
-                                    className="admin-icon-btn"
-                                    onClick={() => openEditForm(mcq)}
-                                    aria-label="Edit question"
-                                  >
-                                    <span className="material-icons">edit</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="admin-icon-btn"
-                                    onClick={() => handleDelete(mcq.id)}
-                                    aria-label="Delete question"
-                                  >
-                                    <span className="material-icons">delete</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-
-                      </table>
-                    )}
-
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-
-                </div>
-
+                )}
               </div>
             </div>
-          </>
-        )}
-
-
-        {view === "form" && (
-          <>
-            <button
-              type="button"
-              className="admin-back-link"
-              onClick={() => { resetForm(); setView("list"); }}
-            >
-              <span className="material-icons">arrow_back</span>
-              Back to MCQ Test
-            </button>
-
-            <div className="row">
-              <div className="col-lg-12">
-
-                <div className="card admin-form-card">
-
-                  <div className="card-header">
-                    <h4 className="card-title">
-                      {editingId ? "Edit Question" : "Create Question"}
-                    </h4>
-                  </div>
-
-                  <div className="card-body">
-
-                    <form onSubmit={handleSave}>
-
-                      <div className="admin-form-group">
-                        <label htmlFor="mcq-course">Course</label>
-                        <select
-                          id="mcq-course"
-                          name="course"
-                          value={form.course}
-                          onChange={handleChange}
-                        >
-                          {initialCourses.map((course) => (
-                            <option key={course.id} value={course.name}>
-                              {course.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="admin-form-group">
-                        <label htmlFor="mcq-subcourse">Sub Course</label>
-                        <select
-                          id="mcq-subcourse"
-                          name="subCourse"
-                          value={form.subCourse}
-                          onChange={handleChange}
-                        >
-                          <option value="">Select Sub Course</option>
-                          {subCourseOptions.map((subCourse) => (
-                            <option key={subCourse.id} value={subCourse.sub}>
-                              {subCourse.sub}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="admin-form-group">
-                        <label htmlFor="mcq-question">MCQ Question</label>
-                        <textarea
-                          id="mcq-question"
-                          name="question"
-                          rows="3"
-                          placeholder="Type the question here"
-                          value={form.question}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="admin-form-group">
-                        <label>Options</label>
-
-                        <div className="admin-mcq-option">
-                          <span className="admin-mcq-option-label">A</span>
-                          <input
-                            name="optionA"
-                            type="text"
-                            placeholder="Option 1"
-                            value={form.optionA}
-                            onChange={handleChange}
-                            required
-                          />
-                        </div>
-
-                        <div className="admin-mcq-option">
-                          <span className="admin-mcq-option-label">B</span>
-                          <input
-                            name="optionB"
-                            type="text"
-                            placeholder="Option 2"
-                            value={form.optionB}
-                            onChange={handleChange}
-                            required
-                          />
-                        </div>
-
-                        <div className="admin-mcq-option">
-                          <span className="admin-mcq-option-label">C</span>
-                          <input
-                            name="optionC"
-                            type="text"
-                            placeholder="Option 3"
-                            value={form.optionC}
-                            onChange={handleChange}
-                            required
-                          />
-                        </div>
-
-                        <div className="admin-mcq-option">
-                          <span className="admin-mcq-option-label">D</span>
-                          <input
-                            name="optionD"
-                            type="text"
-                            placeholder="Option 4"
-                            value={form.optionD}
-                            onChange={handleChange}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="admin-form-group">
-                        <label htmlFor="mcq-correct">Correct Answer</label>
-                        <select
-                          id="mcq-correct"
-                          name="correctAnswer"
-                          value={form.correctAnswer}
-                          onChange={handleChange}
-                        >
-                          {answerOptions.map((option) => (
-                            <option key={option} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="admin-form-actions">
-                        <button type="submit" className="btn btn-primary">
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-light"
-                          onClick={() => { resetForm(); setView("list"); }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-
-                    </form>
-
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
-          </>
-        )}
-
+          </div>
+        </div>
       </div>
-
     </AdminLayout>
   );
 }
