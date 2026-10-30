@@ -1,0 +1,151 @@
+
+.edit-profile-page {
+  padding: 35px;
+  min-height: 80vh;
+}
+
+.edit-profile-card {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 30px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+}
+
+.edit-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.edit-profile-header h2 {
+  margin: 0 0 8px;
+  color: #17345c;
+  font-size: 25px;
+}
+
+.edit-profile-header p {
+  margin: 0;
+  color: #858da0;
+}
+
+.edit-profile-header > i {
+  font-size: 42px;
+  color: #5145cd;
+}
+
+.edit-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.edit-profile-field label {
+  color: #243b60;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.edit-profile-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 15px;
+  border: 1px solid #dce1eb;
+  border-radius: 7px;
+  outline: none;
+  font-size: 15px;
+  color: #263858;
+  background: #ffffff;
+}
+
+.edit-profile-field input:focus {
+  border-color: #5145cd;
+  box-shadow: 0 0 0 3px rgba(81, 69, 205, 0.1);
+}
+
+.edit-profile-field input[readonly] {
+  background: #f3f4f8;
+  color: #858da0;
+  cursor: not-allowed;
+}
+
+.edit-profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.edit-profile-save,
+.edit-profile-cancel {
+  padding: 12px 23px;
+  border: none;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.edit-profile-save {
+  background: #5145cd;
+  color: #ffffff;
+}
+
+.edit-profile-save:hover {
+  background: #4035b4;
+}
+
+.edit-profile-cancel {
+  background: #eeeeF5;
+  color: #5145cd;
+}
+
+.edit-profile-save:disabled,
+.edit-profile-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-profile-message {
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.edit-profile-message.success {
+  color: #176b37;
+  background: #e8f7ed;
+}
+
+.edit-profile-message.error {
+  color: #b42318;
+  background: #fff0ee;
+}
+
+@media (max-width: 600px) {
+  .edit-profile-page {
+    padding: 16px;
+  }
+
+  .edit-profile-card {
+    padding: 20px;
+  }
+
+  .edit-profile-header h2 {
+    font-size: 21px;
+  }
+
+  .edit-profile-actions {
+    flex-direction: column-reverse;
+  }
+
+  .edit-profile-actions button {
+    width: 100%;
+  }
+}

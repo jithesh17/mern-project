@@ -71,9 +71,7 @@ function AdminCourse() {
     } catch (error) {
       console.error("Fetch courses error:", error);
 
-      setError(
-        error.message || "Unable to load courses."
-      );
+      setError(error.message || "Unable to load courses.");
     } finally {
       setLoading(false);
     }
@@ -84,6 +82,11 @@ function AdminCourse() {
   // =====================================================
 
   function resetForm() {
+    // Revoke old preview URL if it exists
+    if (form.logoPreview) {
+      URL.revokeObjectURL(form.logoPreview);
+    }
+
     setForm({
       name: "",
       duration: "",
@@ -99,7 +102,9 @@ function AdminCourse() {
 
   function openCreateForm() {
     resetForm();
+
     setError("");
+
     setView("form");
   }
 
@@ -109,7 +114,9 @@ function AdminCourse() {
 
   function handleBack() {
     resetForm();
+
     setError("");
+
     setView("list");
   }
 
@@ -141,11 +148,7 @@ function AdminCourse() {
     // Validate file type
     // ---------------------------------------------
 
-    const allowedTypes = [
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-    ];
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
 
     if (!allowedTypes.includes(file.type)) {
       alert("Please select a PNG or JPG image.");
@@ -157,7 +160,6 @@ function AdminCourse() {
 
     // ---------------------------------------------
     // Validate file size
-    // 2MB
     // ---------------------------------------------
 
     const maxSize = 2 * 1024 * 1024;
@@ -171,10 +173,22 @@ function AdminCourse() {
     }
 
     // ---------------------------------------------
-    // Preview
+    // Remove previous preview URL
+    // ---------------------------------------------
+
+    if (form.logoPreview) {
+      URL.revokeObjectURL(form.logoPreview);
+    }
+
+    // ---------------------------------------------
+    // Create preview URL
     // ---------------------------------------------
 
     const previewUrl = URL.createObjectURL(file);
+
+    // ---------------------------------------------
+    // Store file + preview
+    // ---------------------------------------------
 
     setForm((previous) => ({
       ...previous,
@@ -220,21 +234,12 @@ function AdminCourse() {
 
       const formData = new FormData();
 
-      // IMPORTANT:
-      // These names must match your backend
-      // and Postman request.
-
+      // These names must match backend
       formData.append("course", form.name.trim());
 
-      formData.append(
-        "duration",
-        form.duration.trim()
-      );
+      formData.append("duration", form.duration.trim());
 
-      formData.append(
-        "logo",
-        form.logoFile
-      );
+      formData.append("logo", form.logoFile);
 
       // ---------------------------------------------
       // POST API
@@ -245,6 +250,10 @@ function AdminCourse() {
         body: formData,
       });
 
+      // ---------------------------------------------
+      // Read response
+      // ---------------------------------------------
+
       const data = await response.json();
 
       console.log("POST course response:", data);
@@ -254,19 +263,14 @@ function AdminCourse() {
       // ---------------------------------------------
 
       if (!response.ok) {
-        throw new Error(
-          data.message || "Failed to create course"
-        );
+        throw new Error(data.message || "Failed to create course");
       }
 
       // ---------------------------------------------
       // SUCCESS
       // ---------------------------------------------
 
-      alert(
-        data.message ||
-          "Course created successfully"
-      );
+      alert(data.message || "Course created successfully");
 
       // ---------------------------------------------
       // Reset form
@@ -285,22 +289,14 @@ function AdminCourse() {
       // ---------------------------------------------
 
       await fetchCourses();
-
     } catch (error) {
-      console.error(
-        "Create course error:",
-        error
-      );
+      console.error("Create course error:", error);
 
       setError(
-        error.message ||
-          "Something went wrong while creating the course."
+        error.message || "Something went wrong while creating the course.",
       );
 
-      alert(
-        error.message ||
-          "Something went wrong while creating the course."
-      );
+      alert(error.message || "Something went wrong while creating the course.");
     } finally {
       setSaving(false);
     }
@@ -315,23 +311,19 @@ function AdminCourse() {
       return "";
     }
 
-    // If backend returns full URL
-    if (
-      logo.startsWith("http://") ||
-      logo.startsWith("https://")
-    ) {
+    // If MongoDB already stores:
+    // /uploads/courses/filename.jpeg
+    if (logo.startsWith("/uploads/")) {
+      return `http://localhost:5000${logo}`;
+    }
+
+    // If it is already a complete URL
+    if (logo.startsWith("http://") || logo.startsWith("https://")) {
       return logo;
     }
 
-    // Backend returns:
-    //
-    // /uploads/courses/example.jpeg
-    //
-    // Convert to:
-    //
-    // http://localhost:5000/uploads/courses/example.jpeg
-
-    return `${API_BASE_URL}${logo}`;
+    // Fallback if only filename is stored
+    return `http://localhost:5000/uploads/courses/${logo}`;
   }
 
   // =====================================================
@@ -340,26 +332,20 @@ function AdminCourse() {
 
   return (
     <AdminLayout>
-
       <div className="admin-page">
-
         {/* ================================================= */}
         {/* LIST VIEW */}
         {/* ================================================= */}
 
         {view === "list" && (
           <>
-
             {/* PAGE HEADER */}
 
             <div className="admin-page-header">
-
               <div>
                 <h2>Course</h2>
 
-                <p>
-                  All courses offered by the academy.
-                </p>
+                <p>All courses offered by the academy.</p>
               </div>
 
               <button
@@ -367,15 +353,10 @@ function AdminCourse() {
                 className="btn btn-primary admin-create-btn"
                 onClick={openCreateForm}
               >
-                <span className="material-icons">
-                  add
-                </span>
-
+                <span className="material-icons">add</span>
                 Create
               </button>
-
             </div>
-
 
             {/* ERROR */}
 
@@ -390,178 +371,96 @@ function AdminCourse() {
               </div>
             )}
 
-
             <div className="row">
-
               <div className="col-lg-12">
-
                 <div className="card">
-
                   <div className="card-body">
-
-                    {/* ================================================= */}
                     {/* LOADING */}
-                    {/* ================================================= */}
 
                     {loading ? (
                       <div className="admin-empty">
+                        <span className="material-icons">sync</span>
 
-                        <span className="material-icons">
-                          sync
-                        </span>
-
-                        <p>
-                          Loading courses...
-                        </p>
-
+                        <p>Loading courses...</p>
                       </div>
                     ) : courses.length === 0 ? (
-
-                      /* ================================================= */
                       /* EMPTY */
-                      /* ================================================= */
 
                       <div className="admin-empty">
+                        <span className="material-icons">menu_book</span>
 
-                        <span className="material-icons">
-                          menu_book
-                        </span>
-
-                        <p>
-                          No courses yet.
-                          Click Create to add one.
-                        </p>
-
+                        <p>No courses yet. Click Create to add one.</p>
                       </div>
-
                     ) : (
-
-                      /* ================================================= */
                       /* TABLE */
-                      /* ================================================= */
 
                       <table className="table table-hover">
-
                         <thead>
-
                           <tr>
+                            <th>Course</th>
 
-                            <th>
-                              Course
-                            </th>
+                            <th>Duration</th>
 
-                            <th>
-                              Duration
-                            </th>
+                            <th>Logo</th>
 
-                            <th>
-                              Logo
-                            </th>
-
-                            <th>
-                              Preview
-                            </th>
-
+                            <th>Preview</th>
                           </tr>
-
                         </thead>
 
-
                         <tbody>
-
                           {courses.map((course) => (
-
-                            <tr
-                              key={course._id}
-                            >
-
+                            <tr key={course._id}>
                               {/* COURSE */}
 
-                              <td>
-                                {course.course}
-                              </td>
-
+                              <td>{course.course}</td>
 
                               {/* DURATION */}
 
-                              <td>
-                                {course.duration}
-                              </td>
-
+                              <td>{course.duration}</td>
 
                               {/* LOGO NAME */}
 
                               <td>
-
                                 {course.logo ? (
                                   <span className="badge badge-info">
-                                    {course.logo
-                                      .split("/")
-                                      .pop()}
+                                    {course.logo.split("/").pop()}
                                   </span>
                                 ) : (
                                   <span className="badge badge-warning">
                                     No logo
                                   </span>
                                 )}
-
                               </td>
-
 
                               {/* IMAGE */}
 
                               <td>
-
                                 {course.logo ? (
-
                                   <img
-                                    src={getLogoUrl(
-                                      course.logo
-                                    )}
-                                    alt={
-                                      course.course
-                                    }
+                                    src={getLogoUrl(course.logo)}
+                                    alt={course.course}
                                     style={{
                                       width: "60px",
                                       height: "60px",
-                                      objectFit:
-                                        "cover",
-                                      borderRadius:
-                                        "8px",
+                                      objectFit: "cover",
+                                      borderRadius: "8px",
                                     }}
                                   />
-
                                 ) : (
-
-                                  <span>
-                                    No image
-                                  </span>
-
+                                  <span>No image</span>
                                 )}
-
                               </td>
-
                             </tr>
-
                           ))}
-
                         </tbody>
-
                       </table>
-
                     )}
-
                   </div>
-
                 </div>
-
               </div>
-
             </div>
-
           </>
         )}
-
 
         {/* ================================================= */}
         {/* CREATE FORM */}
@@ -569,7 +468,6 @@ function AdminCourse() {
 
         {view === "form" && (
           <>
-
             {/* BACK */}
 
             <button
@@ -578,52 +476,29 @@ function AdminCourse() {
               onClick={handleBack}
               disabled={saving}
             >
-
-              <span className="material-icons">
-                arrow_back
-              </span>
-
+              <span className="material-icons">arrow_back</span>
               Back to Courses
-
             </button>
 
-
             <div className="row">
-
               <div className="col-lg-12">
-
                 <div className="card admin-form-card">
-
-
                   {/* HEADER */}
 
                   <div className="card-header">
-
-                    <h4 className="card-title">
-                      Create Course
-                    </h4>
-
+                    <h4 className="card-title">Create Course</h4>
                   </div>
-
 
                   {/* BODY */}
 
                   <div className="card-body">
-
-                    <form
-                      onSubmit={handleSave}
-                    >
-
-
+                    <form onSubmit={handleSave}>
                       {/* ================================================= */}
                       {/* COURSE */}
                       {/* ================================================= */}
 
                       <div className="admin-form-group">
-
-                        <label htmlFor="course-name">
-                          Course
-                        </label>
+                        <label htmlFor="course-name">Course</label>
 
                         <input
                           id="course-name"
@@ -631,62 +506,44 @@ function AdminCourse() {
                           type="text"
                           placeholder="e.g. React"
                           value={form.name}
-                          onChange={
-                            handleChange
-                          }
+                          onChange={handleChange}
                           disabled={saving}
                           required
                         />
-
                       </div>
-
 
                       {/* ================================================= */}
                       {/* DURATION */}
                       {/* ================================================= */}
 
                       <div className="admin-form-group">
-
-                        <label htmlFor="course-duration">
-                          Duration
-                        </label>
+                        <label htmlFor="course-duration">Duration</label>
 
                         <input
                           id="course-duration"
                           name="duration"
                           type="text"
                           placeholder="e.g. 4 Weeks"
-                          value={
-                            form.duration
-                          }
-                          onChange={
-                            handleChange
-                          }
+                          value={form.duration}
+                          onChange={handleChange}
                           disabled={saving}
                           required
                         />
-
                       </div>
-
 
                       {/* ================================================= */}
                       {/* LOGO */}
                       {/* ================================================= */}
 
                       <div className="admin-form-group">
-
-                        <label htmlFor="course-logo">
-                          Logo
-                        </label>
+                        <label htmlFor="course-logo">Logo</label>
 
                         <input
                           id="course-logo"
                           name="logo"
                           type="file"
                           accept="image/png,image/jpeg"
-                          onChange={
-                            handleLogoChange
-                          }
+                          onChange={handleLogoChange}
                           disabled={saving}
                         />
 
@@ -694,49 +551,42 @@ function AdminCourse() {
                           PNG or JPG, up to 2MB.
                         </p>
 
-
+                        {/* ================================================= */}
                         {/* IMAGE PREVIEW */}
+                        {/* ================================================= */}
 
                         {form.logoPreview && (
-
                           <div className="admin-logo-preview">
-
                             <img
-                              src={
-                                form.logoPreview
-                              }
-                              alt="Logo preview"
+                              src={form.logoPreview}
+                              alt={form.logo}
+                              style={{
+                                width: "120px",
+                                height: "120px",
+                                objectFit: "cover",
+                                borderRadius: "10px",
+                                display: "block",
+                                marginBottom: "10px",
+                              }}
                             />
 
-                            <span>
-                              {form.logo}
-                            </span>
-
+                            <span>{form.logo}</span>
                           </div>
-
                         )}
-
                       </div>
-
 
                       {/* ================================================= */}
                       {/* BUTTONS */}
                       {/* ================================================= */}
 
                       <div className="admin-form-actions">
-
                         <button
                           type="submit"
                           className="btn btn-primary"
                           disabled={saving}
                         >
-
-                          {saving
-                            ? "Saving..."
-                            : "Save"}
-
+                          {saving ? "Saving..." : "Save"}
                         </button>
-
 
                         <button
                           type="button"
@@ -746,24 +596,15 @@ function AdminCourse() {
                         >
                           Cancel
                         </button>
-
                       </div>
-
                     </form>
-
                   </div>
-
                 </div>
-
               </div>
-
             </div>
-
           </>
         )}
-
       </div>
-
     </AdminLayout>
   );
 }

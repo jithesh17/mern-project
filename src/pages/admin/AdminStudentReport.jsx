@@ -5,33 +5,44 @@ import "../../css/dashboard.css";
 import "../../css/theme.css";
 import "../../css/admin.css";
 
-function AdminStudentReport() {
-  const [reports, setReports] = useState([]);
+const API_URL = "http://localhost:5000/api";
+
+const statusBadge = {
+  Active: "badge-success",
+  Completed: "badge-primary",
+  Dropped: "badge-danger",
+};
+
+function StudentReport() {
+  // =====================================================
+  // STATE
+  // =====================================================
+
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [batchFilter, setBatchFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
-  // GET STUDENT REPORT
-  const fetchStudentReport = async () => {
+  // =====================================================
+  // GET STUDENTS
+  // =====================================================
+
+  const fetchStudents = async () => {
     try {
       setLoading(true);
 
-      const response = await fetch(
-        "http://localhost:5000/api/student-report"
-      );
-
-      const result = await response.json();
-
-      console.log("Student Report Response:", result);
+      const response = await fetch(`${API_URL}/students`);
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to fetch student report"
-        );
+        throw new Error("Failed to fetch student report");
       }
 
-      setReports(result.data || []);
+      const data = await response.json();
+
+      console.log("Student report data:", data);
+
+      setStudents(data);
     } catch (error) {
       console.error("Student report error:", error);
       alert(error.message);
@@ -40,147 +51,230 @@ function AdminStudentReport() {
     }
   };
 
+  // =====================================================
+  // LOAD DATA
+  // =====================================================
+
   useEffect(() => {
-    fetchStudentReport();
+    fetchStudents();
   }, []);
 
-  // UNIQUE BATCHES
+  // =====================================================
+  // BATCHES
+  // Get unique batches from database
+  // =====================================================
+
   const batches = useMemo(() => {
-    return [
+    const uniqueBatches = [
       ...new Set(
-        reports
-          .map((item) => item.studentBatch)
+        students
+          .map((student) => student.batch)
           .filter(Boolean)
       ),
     ];
-  }, [reports]);
 
-  // FILTER DATA
-  const filteredReports = useMemo(() => {
-    return reports.filter((item) => {
+    return uniqueBatches;
+  }, [students]);
+
+  // =====================================================
+  // FILTER STUDENTS
+  // =====================================================
+
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
       const batchMatch =
-        !batchFilter ||
-        item.studentBatch === batchFilter;
+        !selectedBatch ||
+        student.batch === selectedBatch;
 
       const statusMatch =
-        !statusFilter ||
-        item.status?.toLowerCase() ===
-          statusFilter.toLowerCase();
+        !selectedStatus ||
+        student.status === selectedStatus;
 
       return batchMatch && statusMatch;
     });
-  }, [reports, batchFilter, statusFilter]);
+  }, [students, selectedBatch, selectedStatus]);
 
-  // COUNTS
-  const totalStudents = reports.length;
+  // =====================================================
+  // REPORT COUNTS
+  // =====================================================
 
-  const activeStudents = reports.filter(
-    (item) =>
-      item.status?.toLowerCase() === "active"
+  const totalStudents = students.length;
+
+  const activeStudents = students.filter(
+    (student) => student.status === "Active"
   ).length;
 
-  const completedStudents = reports.filter(
-    (item) =>
-      item.status?.toLowerCase() === "completed"
+  const completedStudents = students.filter(
+    (student) => student.status === "Completed"
   ).length;
 
-  const droppedStudents = reports.filter(
-    (item) =>
-      item.status?.toLowerCase() === "dropped"
+  const droppedStudents = students.filter(
+    (student) => student.status === "Dropped"
   ).length;
 
-  // DATE FORMAT
-  const formatDate = (date) => {
-    if (!date) return "-";
+  // =====================================================
+  // CLEAR FILTERS
+  // =====================================================
 
-    return new Date(date)
-      .toISOString()
-      .slice(0, 10);
+  const clearFilters = () => {
+    setSelectedBatch("");
+    setSelectedStatus("");
   };
+
+  // =====================================================
+  // UI
+  // =====================================================
 
   return (
     <AdminLayout>
       <div className="admin-page">
 
-        {/* HEADER */}
+        {/* =================================================
+            PAGE HEADER
+        ================================================= */}
+
         <div className="admin-page-header">
+
           <div>
             <h2>Student Report</h2>
+
             <p>
-              Enrollment summary across every
-              course and batch.
+              Enrollment summary across every course and batch.
             </p>
           </div>
-        </div>
-
-        {/* SUMMARY CARDS */}
-        <div className="row">
-
-          <div className="col-lg-3 col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h3>{totalStudents}</h3>
-                <p>Total Students</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-3 col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h3>{activeStudents}</h3>
-                <p>Active</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-3 col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h3>{completedStudents}</h3>
-                <p>Completed</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-lg-3 col-md-6">
-            <div className="card">
-              <div className="card-body">
-                <h3>{droppedStudents}</h3>
-                <p>Dropped</p>
-              </div>
-            </div>
-          </div>
 
         </div>
 
-        {/* REPORT TABLE */}
+        {/* =================================================
+            REPORT CARDS
+        ================================================= */}
+
         <div className="row">
+
+          {/* TOTAL STUDENTS */}
+
+          <div className="col-lg-6 col-md-6 mb-3">
+            <div className="card">
+              <div className="card-body">
+
+                <h2>
+                  {loading ? "..." : totalStudents}
+                </h2>
+
+                <p className="mb-0">
+                  Total Students
+                </p>
+
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVE */}
+
+          <div className="col-lg-6 col-md-6 mb-3">
+            <div className="card">
+              <div className="card-body">
+
+                <h2>
+                  {loading ? "..." : activeStudents}
+                </h2>
+
+                <p className="mb-0">
+                  Active
+                </p>
+
+              </div>
+            </div>
+          </div>
+
+          {/* COMPLETED */}
+
+          <div className="col-lg-6 col-md-6 mb-3">
+            <div className="card">
+              <div className="card-body">
+
+                <h2>
+                  {loading ? "..." : completedStudents}
+                </h2>
+
+                <p className="mb-0">
+                  Completed
+                </p>
+
+              </div>
+            </div>
+          </div>
+
+          {/* DROPPED */}
+
+          <div className="col-lg-6 col-md-6 mb-3">
+            <div className="card">
+              <div className="card-body">
+
+                <h2>
+                  {loading ? "..." : droppedStudents}
+                </h2>
+
+                <p className="mb-0">
+                  Dropped
+                </p>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* =================================================
+            FILTER + REPORT TABLE
+        ================================================= */}
+
+        <div className="row mt-3">
+
           <div className="col-lg-12">
 
             <div className="card">
 
+              {/* CARD HEADER */}
+
               <div className="card-header">
+
                 <h4 className="card-title">
                   All Students
                 </h4>
+
               </div>
+
+              {/* CARD BODY */}
 
               <div className="card-body">
 
-                {/* FILTERS */}
+                {/* =================================================
+                    FILTERS
+                ================================================= */}
+
                 <div className="row">
 
-                  <div className="col-lg-6">
+                  {/* BATCH */}
+
+                  <div className="col-md-6">
+
                     <div className="admin-form-group">
-                      <label>Batch</label>
+
+                      <label htmlFor="batch-filter">
+                        Batch
+                      </label>
 
                       <select
-                        value={batchFilter}
-                        onChange={(e) =>
-                          setBatchFilter(e.target.value)
+                        id="batch-filter"
+                        value={selectedBatch}
+                        onChange={(event) =>
+                          setSelectedBatch(
+                            event.target.value
+                          )
                         }
                       >
+
                         <option value="">
                           All Batches
                         </option>
@@ -193,20 +287,33 @@ function AdminStudentReport() {
                             {batch}
                           </option>
                         ))}
+
                       </select>
+
                     </div>
+
                   </div>
 
-                  <div className="col-lg-6">
+                  {/* STATUS */}
+
+                  <div className="col-md-6">
+
                     <div className="admin-form-group">
-                      <label>Status</label>
+
+                      <label htmlFor="status-filter">
+                        Status
+                      </label>
 
                       <select
-                        value={statusFilter}
-                        onChange={(e) =>
-                          setStatusFilter(e.target.value)
+                        id="status-filter"
+                        value={selectedStatus}
+                        onChange={(event) =>
+                          setSelectedStatus(
+                            event.target.value
+                          )
                         }
                       >
+
                         <option value="">
                           All Statuses
                         </option>
@@ -222,94 +329,181 @@ function AdminStudentReport() {
                         <option value="Dropped">
                           Dropped
                         </option>
+
                       </select>
+
                     </div>
+
                   </div>
 
                 </div>
 
-                {/* TABLE */}
+                {/* =================================================
+                    CLEAR FILTER
+                ================================================= */}
+
+                {(selectedBatch || selectedStatus) && (
+                  <div className="mb-3">
+
+                    <button
+                      type="button"
+                      className="btn btn-light"
+                      onClick={clearFilters}
+                    >
+                      Clear Filters
+                    </button>
+
+                  </div>
+                )}
+
+                {/* =================================================
+                    LOADING
+                ================================================= */}
+
                 {loading ? (
                   <div className="admin-empty">
-                    <p>Loading student report...</p>
+
+                    <p>
+                      Loading student report...
+                    </p>
+
                   </div>
-                ) : filteredReports.length === 0 ? (
+                ) : filteredStudents.length === 0 ? (
+
+                  /* =================================================
+                     NO DATA
+                  ================================================= */
+
                   <div className="admin-empty">
+
                     <span className="material-icons">
-                      people
+                      groups
                     </span>
 
                     <p>
                       No student report data found.
                     </p>
+
                   </div>
                 ) : (
+
+                  /* =================================================
+                     TABLE
+                  ================================================= */
+
                   <div className="table-responsive">
 
                     <table className="table table-hover">
 
                       <thead>
+
                         <tr>
+
                           <th>S.No</th>
-                          <th>Trainer</th>
+
+                          <th>Student</th>
+
+                          <th>Email</th>
+
+                          <th>Course</th>
+
                           <th>Batch</th>
+
                           <th>Start Date</th>
-                          <th>End Date</th>
+
                           <th>Status</th>
+
                         </tr>
+
                       </thead>
 
                       <tbody>
-                        {filteredReports.map(
-                          (item, index) => (
-                            <tr
-                              key={
-                                item._id || index
-                              }
-                            >
-                              <td>{index + 1}</td>
+
+                        {filteredStudents.map(
+                          (student, index) => (
+                            <tr key={student._id}>
+
+                              {/* S.NO */}
 
                               <td>
-                                {item.trainer?.name ||
-                                  "-"}
+                                {index + 1}
                               </td>
 
-                              <td>
-                                {item.studentBatch ||
-                                  "-"}
-                              </td>
+                              {/* STUDENT */}
 
                               <td>
-                                {formatDate(
-                                  item.startDate
-                                )}
+                                {student.student}
                               </td>
 
-                              <td>
-                                {formatDate(
-                                  item.endDate
-                                )}
-                              </td>
+                              {/* EMAIL */}
 
                               <td>
-                                <span className="badge badge-success">
-                                  {item.status || "-"}
+                                {student.email || "-"}
+                              </td>
+
+                              {/* COURSE */}
+
+                              <td>
+
+                                {student.course?.course ||
+                                  "Unknown"}
+
+                              </td>
+
+                              {/* BATCH */}
+
+                              <td>
+                                {student.batch}
+                              </td>
+
+                              {/* START DATE */}
+
+                              <td>
+
+                                {student.startDate
+                                  ? student.startDate.substring(
+                                      0,
+                                      10
+                                    )
+                                  : "-"}
+
+                              </td>
+
+                              {/* STATUS */}
+
+                              <td>
+
+                                <span
+                                  className={`badge ${
+                                    statusBadge[
+                                      student.status
+                                    ] ||
+                                    "badge-primary"
+                                  }`}
+                                >
+                                  {student.status}
                                 </span>
+
                               </td>
+
                             </tr>
                           )
                         )}
+
                       </tbody>
 
                     </table>
 
                   </div>
+
                 )}
 
               </div>
+
             </div>
 
           </div>
+
         </div>
 
       </div>
@@ -317,4 +511,4 @@ function AdminStudentReport() {
   );
 }
 
-export default AdminStudentReport;
+export default StudentReport;

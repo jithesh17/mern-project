@@ -1,1357 +1,663 @@
-
-import userImage from "../assets/images/user.jpg";
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 import "../css/dashboard.css";
 import "../css/theme.css";
-console.log("DASHBOARD JSX LOADED");
+
+const API_URL = "http://localhost:5000";
+
+function getId(value) {
+  if (!value) return "";
+  if (typeof value === "object") {
+    return String(value._id || value.id || "");
+  }
+  return String(value);
+}
+
+function getResultSubCourseId(result) {
+  return getId(result.subCourse || result.subcourse);
+}
+
 function Dashboard() {
+  const [assignedCourse, setAssignedCourse] = useState(null);
+  const [subCourses, setSubCourses] = useState([]);
+  const [mcqResults, setMcqResults] = useState([]);
+  const [courseLoading, setCourseLoading] = useState(true);
+  const [resultsLoading, setResultsLoading] = useState(true);
+  const [courseError, setCourseError] = useState("");
+  const [resultsError, setResultsError] = useState("");
+
+  const currentStudent = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("currentStudent") || "{}");
+    } catch {
+      return {};
+    }
+  }, []);
+
+  const studentName =
+    currentStudent.student || currentStudent.name || "Student";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchAssignedCourseAndSubCourses() {
+      try {
+        setCourseLoading(true);
+        setCourseError("");
+
+        const student = JSON.parse(
+          sessionStorage.getItem("currentStudent") || "{}",
+        );
+        const token = sessionStorage.getItem("token");
+
+        if (!student._id) {
+          throw new Error(
+            "Student information not found. Please log in again.",
+          );
+        }
+        if (!token) {
+          throw new Error("Login session not found. Please log in again.");
+        }
+
+        const studentResponse = await fetch(
+          `${API_URL}/api/students/${student._id}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        const studentData = await studentResponse.json();
+        if (!studentResponse.ok) {
+          throw new Error(
+            studentData.message || "Unable to fetch your assigned course.",
+          );
+        }
+
+        // Support APIs that return either the student object or { student: ... }.
+        const studentDetails =
+          studentData.student &&
+          typeof studentData.student === "object" &&
+          !Array.isArray(studentData.student)
+            ? studentData.student
+            : studentData;
+
+        const courseValue = studentDetails.course;
+        const course =
+          courseValue && typeof courseValue === "object" ? courseValue : null;
+
+        if (cancelled) return;
+        setAssignedCourse(course);
+
+        if (!course?._id) {
+          setSubCourses([]);
+          return;
+        }
+
+        // This route should match the subcourse-by-course route in your backend.
+        const subCourseResponse = await fetch(
+          `${API_URL}/api/subcourses/course/${course._id}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+
+        const subCourseData = await subCourseResponse.json();
+        if (!subCourseResponse.ok) {
+          throw new Error(
+            subCourseData.message || "Unable to fetch your subcourses.",
+          );
+        }
+
+        const list = Array.isArray(subCourseData)
+          ? subCourseData
+          : subCourseData.subCourses ||
+            subCourseData.subcourses ||
+            subCourseData.data ||
+            [];
+
+        list.sort(
+          (a, b) =>
+            new Date(a.createdAt || 0).getTime() -
+            new Date(b.createdAt || 0).getTime(),
+        );
+
+        if (!cancelled) setSubCourses(list);
+      } catch (error) {
+        console.error("Dashboard course error:", error);
+        if (!cancelled)
+          setCourseError(error.message || "Unable to load course.");
+      } finally {
+        if (!cancelled) setCourseLoading(false);
+      }
+    }
+
+    async function fetchMCQResults() {
+      try {
+        setResultsLoading(true);
+        setResultsError("");
+
+        const token = sessionStorage.getItem("token");
+        if (!token) {
+          throw new Error("Login session not found. Please log in again.");
+        }
+
+        const response = await fetch(`${API_URL}/api/mcqs/my-results`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Unable to load MCQ results.");
+        }
+
+        const list = Array.isArray(data)
+          ? data
+          : data.results || data.data || [];
+
+        if (!cancelled) setMcqResults(list);
+      } catch (error) {
+        console.error("Dashboard MCQ results error:", error);
+        if (!cancelled)
+          setResultsError(error.message || "Unable to load MCQ results.");
+      } finally {
+        if (!cancelled) setResultsLoading(false);
+      }
+    }
+
+    fetchAssignedCourseAndSubCourses();
+    fetchMCQResults();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const mcqTests = mcqResults.length;
+
+  const averageScore = mcqTests
+    ? Math.round(
+        mcqResults.reduce(
+          (total, result) => total + (Number(result.percentage) || 0),
+          0,
+        ) / mcqTests,
+      )
+    : 0;
+
+  const hasPassed = (subCourseId) =>
+    mcqResults.some(
+      (result) =>
+        getResultSubCourseId(result) === String(subCourseId) &&
+        (result.passed === true || Number(result.percentage) >= 70),
+    );
+
+  const getBestScore = (subCourseId) => {
+    const scores = mcqResults
+      .filter((result) => getResultSubCourseId(result) === String(subCourseId))
+      .map((result) => Number(result.percentage))
+      .filter((score) => Number.isFinite(score));
+
+    return scores.length ? Math.max(...scores) : null;
+  };
+
+  const completedIds = new Set(
+    mcqResults
+      .filter(
+        (result) => result.passed === true || Number(result.percentage) >= 70,
+      )
+      .map(getResultSubCourseId)
+      .filter(Boolean),
+  );
+
+  const completedSubCourses = subCourses.filter((subCourse) =>
+    completedIds.has(String(subCourse._id)),
+  ).length;
+
+  const currentIndex = subCourses.findIndex(
+    (subCourse) => !hasPassed(subCourse._id),
+  );
+
+  const lockedCount = subCourses.filter((subCourse, index) => {
+    return index > 0 && !hasPassed(subCourses[index - 1]._id);
+  }).length;
+  const inProgressCount = Math.max(
+    0,
+    subCourses.length - completedSubCourses - lockedCount,
+  );
+  const completionPercentage = subCourses.length
+    ? Math.round((completedSubCourses / subCourses.length) * 100)
+    : 0;
+
+  const recentResults = [...mcqResults]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || b.updatedAt || 0).getTime() -
+        new Date(a.createdAt || a.updatedAt || 0).getTime(),
+    )
+    .slice(0, 5);
+
   return (
     <Layout>
-    <div className="dashboard-content">
+      <div className="dashboard-content">
+        <div className="dashboard-main">
+          <div className="container-fluid">
+            {/* Welcome banner */}
+            <div className="row">
+              <div className="col-xl-12">
+                <div
+                  className="card"
+                  style={{
+                    background: "linear-gradient(90deg,#4F46E5,#6366F1)",
+                    color: "#fff",
+                    border: "none",
+                  }}
+                >
+                  <div className="card-body d-flex justify-content-between align-items-center flex-wrap">
+                    <div>
+                      <h2 className="text-white mb-2">
+                        Welcome Back, {studentName}
+                      </h2>
+                      <p className="mb-3 text-white">
+                        Continue your learning journey and track your progress.
+                      </p>
+                      <Link to="/course" className="btn btn-light">
+                        Resume Learning
+                      </Link>
+                    </div>
+                    <div className="text-right mt-3 mt-md-0">
+                      <h5 className="text-white mb-1">Your Course</h5>
+                      <h2 className="text-warning">
+                        {courseLoading
+                          ? "Loading..."
+                          : assignedCourse?.course || "Not assigned"}
+                      </h2>
+                      <small className="text-white">
+                        {completedSubCourses} of {subCourses.length} subcourses
+                        completed
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {/* =========================
-          NAV HEADER
-      ========================= */}
-      
+            {/* Dynamic statistics */}
+            <div className="row">
+              <div className="col-xl-3 col-md-6">
+                <div className="card">
+                  <div className="card-body d-flex align-items-center">
+                    <div className="mr-4">
+                      <div style={iconCircle("#4F46E5")}>
+                        <span className="material-icons text-white">
+                          menu_book
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <h2>{courseLoading ? "..." : assignedCourse ? 1 : 0}</h2>
+                      <h5>Enrolled Courses</h5>
+                      <small className="text-success">
+                        {assignedCourse
+                          ? "Course assigned"
+                          : "No course assigned"}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <div className="col-xl-3 col-md-6">
+                <div className="card">
+                  <div className="card-body d-flex align-items-center">
+                    <div className="mr-4">
+                      <div style={iconCircle("#22C55E")}>
+                        <span className="material-icons text-white">check</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h2>
+                        {courseLoading || resultsLoading
+                          ? "..."
+                          : completedSubCourses}
+                      </h2>
+                      <h5>Subcourses Completed</h5>
+                      <small className="text-success">
+                        {courseLoading
+                          ? "Loading progress"
+                          : `${completionPercentage}% complete`}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      {/* =========================
-          HEADER
-      ========================= */}
-      
+              <div className="col-xl-3 col-md-6">
+                <div className="card">
+                  <div className="card-body d-flex align-items-center">
+                    <div className="mr-4">
+                      <div style={iconCircle("#F59E0B")}>
+                        <span className="material-icons text-white">edit</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h2>{resultsLoading ? "..." : mcqTests}</h2>
+                      <h5>MCQ Tests Taken</h5>
+                      <small className="text-muted">Submitted attempts</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <div className="col-xl-3 col-md-6">
+                <div className="card">
+                  <div className="card-body d-flex align-items-center">
+                    <div className="mr-4">
+                      <div style={iconCircle("#EF4444")}>
+                        <span className="material-icons text-white">
+                          emoji_events
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <h2>{resultsLoading ? "..." : `${averageScore}%`}</h2>
+                      <h5>Average Score</h5>
+                      <small className="text-muted">
+                        {mcqTests
+                          ? "Across submitted attempts"
+                          : "No tests submitted yet"}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {/* =========================
-          SIDEBAR
-      ========================= */}
-      
-
-                             
-      
-
-
-      {/* =========================
-          CONTENT BODY
-      ========================= */}
-      <div
-        className="dashboard-main"
-        
-      >
-
-        <div className="container-fluid">
-
-
-          {/* =========================
-              WELCOME BANNER
-          ========================= */}
-          <div className="row">
-
-            <div className="col-xl-12">
-
-              <div
-                className="card"
-                style={{
-                  background:
-                    "linear-gradient(90deg,#4F46E5,#6366F1)",
-                  color: "#fff",
-                  border: "none"
-                }}
-              >
-
-                <div className="card-body d-flex justify-content-between align-items-center">
-
-                  <div>
-
-                    <h2 className="text-white mb-2">
-                      Welcome Back, Manjunathan
-                    </h2>
-
-                    <p className="mb-3 text-white">
-                      Continue your learning journey and become a
-                      Full Stack Developer.
-                    </p>
-
-                    <Link
-                      to="/course"
-                      className="btn btn-light"
-                    >
-                      Resume Learning
+            {/* Continue learning + learning path */}
+            <div className="row">
+              <div className="col-xl-6">
+                <div className="card">
+                  <div className="card-header d-flex justify-content-between align-items-center">
+                    <h4 className="card-title mb-0">Continue Learning</h4>
+                    <Link to="/course" className="btn btn-sm btn-primary">
+                      View All
                     </Link>
-
                   </div>
-
-
-                  <div className="text-right">
-
-                    <h5 className="text-white mb-1">
-                      Today's Goal
-                    </h5>
-
-                    <h2 className="text-warning">
-                      3 Lessons
-                    </h2>
-
-                    <small className="text-white">
-                      Keep your learning streak alive
-                    </small>
-
+                  <div className="card-body">
+                    {courseLoading ? (
+                      <p>Loading your learning path...</p>
+                    ) : courseError ? (
+                      <p className="text-danger">{courseError}</p>
+                    ) : subCourses.length === 0 ? (
+                      <p>
+                        No subcourses are available for your assigned course
+                        yet.
+                      </p>
+                    ) : (
+                      subCourses.slice(0, 5).map((subCourse, index) => {
+                        const completed = hasPassed(subCourse._id);
+                        const locked =
+                          index > 0 && !hasPassed(subCourses[index - 1]._id);
+                        const score = getBestScore(subCourse._id);
+                        return (
+                          <div key={subCourse._id} className="mb-4">
+                            <div className="d-flex justify-content-between align-items-center">
+                              <h6 className="mb-1">
+                                {subCourse.sub || subCourse.name || "Subcourse"}
+                              </h6>
+                              <small>
+                                {locked
+                                  ? "Locked"
+                                  : completed
+                                    ? "Completed"
+                                    : score !== null
+                                      ? "Quiz attempted"
+                                      : "Not started"}
+                              </small>
+                            </div>
+                            {score !== null && (
+                              <>
+                                <div className="d-flex justify-content-between mt-2">
+                                  <small className="text-muted">
+                                    Best quiz score
+                                  </small>
+                                  <strong>{score}%</strong>
+                                </div>
+                                <div className="progress mt-2">
+                                  <div
+                                    className={`progress-bar ${completed ? "bg-success" : "bg-primary"}`}
+                                    style={{
+                                      width: `${Math.min(100, Math.max(0, score))}%`,
+                                    }}
+                                  />
+                                </div>
+                              </>
+                            )}
+                            {locked && (
+                              <small className="text-muted">
+                                Pass the previous subcourse to unlock this one.
+                              </small>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-
                 </div>
-
               </div>
 
-            </div>
-
-          </div>
-
-
-          {/* =========================
-              STATISTICS
-          ========================= */}
-          <div className="row">
-
-
-            {/* Enrolled Courses */}
-            <div className="col-xl-3 col-md-6">
-
-              <div className="card">
-
-                <div className="card-body d-flex align-items-center">
-
-                  <div className="mr-4">
-
-                    <div
-                      style={{
-                        width: "70px",
-                        height: "70px",
-                        background: "#4F46E5",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-
-                      <span className="material-icons text-white">
-                        menu_book
-                      </span>
-
-                    </div>
-
+              <div className="col-xl-6">
+                <div className="card">
+                  <div className="card-header">
+                    <h4 className="card-title">My Learning Path</h4>
                   </div>
-
-                  <div>
-
-                    <h2>
-                      12
-                    </h2>
-
-                    <h5>
-                      Enrolled Courses
-                    </h5>
-
-                    <small className="text-success">
-                      +2 New Courses
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Completed */}
-            <div className="col-xl-3 col-md-6">
-
-              <div className="card">
-
-                <div className="card-body d-flex align-items-center">
-
-                  <div className="mr-4">
-
-                    <div
-                      style={{
-                        width: "70px",
-                        height: "70px",
-                        background: "#22C55E",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-
-                      <span className="material-icons text-white">
-                        check
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <h2>
-                      8
-                    </h2>
-
-                    <h5>
-                      Completed
-                    </h5>
-
-                    <small className="text-success">
-                      67% Completed
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* MCQ */}
-            <div className="col-xl-3 col-md-6">
-
-              <div className="card">
-
-                <div className="card-body d-flex align-items-center">
-
-                  <div className="mr-4">
-
-                    <div
-                      style={{
-                        width: "70px",
-                        height: "70px",
-                        background: "#F59E0B",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-
-                      <span className="material-icons text-white">
-                        edit
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <h2>
-                      5
-                    </h2>
-
-                    <h5>
-                      MCQ Tests
-                    </h5>
-
-                    <small className="text-primary">
-                      2 Pending
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Score */}
-            <div className="col-xl-3 col-md-6">
-
-              <div className="card">
-
-                <div className="card-body d-flex align-items-center">
-
-                  <div className="mr-4">
-
-                    <div
-                      style={{
-                        width: "70px",
-                        height: "70px",
-                        background: "#EF4444",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                      }}
-                    >
-
-                      <span className="material-icons text-white">
-                        emoji_events
-                      </span>
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <h2>
-                      88%
-                    </h2>
-
-                    <h5>
-                      Average Score
-                    </h5>
-
-                    <small className="text-danger">
-                      Excellent Performance
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =========================
-              CONTINUE LEARNING
-              + WEEKLY PROGRESS
-          ========================= */}
-          <div className="row">
-
-
-            {/* Continue Learning */}
-            <div className="col-xl-6">
-
-              <div className="card">
-
-                <div className="card-header d-flex justify-content-between align-items-center">
-
-                  <h4 className="card-title mb-0">
-                    Continue Learning
-                  </h4>
-
-                  <Link
-                    to="/course"
-                    className="btn btn-sm btn-primary"
-                  >
-                    View All
-                  </Link>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  {/* HTML */}
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <h6>
-                        HTML & CSS Masterclass
-                      </h6>
-
-                      <strong>
-                        95%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-primary"
-                        style={{ width: "95%" }}
-                      >
-                        95%
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* JavaScript */}
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <h6>
-                        JavaScript Essentials
-                      </h6>
-
-                      <strong>
-                        80%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-success"
-                        style={{ width: "80%" }}
-                      >
-                        80%
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* React */}
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <h6>
-                        React.js Bootcamp
-                      </h6>
-
-                      <strong>
-                        75%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-warning"
-                        style={{ width: "75%" }}
-                      >
-                        75%
-                      </div>
-
-                    </div>
-
-                  </div>
-
-
-                  {/* Node */}
-                  <div>
-
-                    <div className="d-flex justify-content-between">
-
-                      <h6>
-                        Node.js Basics
-                      </h6>
-
-                      <strong>
-                        40%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-danger"
-                        style={{ width: "40%" }}
-                      >
-                        40%
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Weekly Progress */}
-            <div className="col-xl-6">
-
-              <div className="card">
-
-                <div className="card-header">
-
-                  <h4 className="card-title">
-                    Weekly Progress
-                  </h4>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  <div className="mb-4">
-
-                    <small>
-                      Monday
-                    </small>
-
-                    <div className="progress">
-
-                      <div
-                        className="progress-bar bg-primary"
-                        style={{ width: "65%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mb-4">
-
-                    <small>
-                      Tuesday
-                    </small>
-
-                    <div className="progress">
-
-                      <div
-                        className="progress-bar bg-success"
-                        style={{ width: "90%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mb-4">
-
-                    <small>
-                      Wednesday
-                    </small>
-
-                    <div className="progress">
-
-                      <div
-                        className="progress-bar bg-warning"
-                        style={{ width: "75%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mb-4">
-
-                    <small>
-                      Thursday
-                    </small>
-
-                    <div className="progress">
-
-                      <div
-                        className="progress-bar bg-info"
-                        style={{ width: "85%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div>
-
-                    <small>
-                      Friday
-                    </small>
-
-                    <div className="progress">
-
-                      <div
-                        className="progress-bar bg-danger"
-                        style={{ width: "95%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =========================
-              POPULAR COURSES
-          ========================= */}
-          <div className="row">
-
-            <div className="col-xl-12">
-
-              <div className="card">
-
-                <div className="card-header d-flex justify-content-between">
-
-                  <h4 className="card-title">
-                    Popular Courses
-                  </h4>
-
-                  <Link
-                    to="/course"
-                    className="btn btn-sm btn-primary"
-                  >
-                    View All
-                  </Link>
-
-                </div>
-
-
-                <div className="card-body">
-
-                  <div className="row">
-
-
-                    {/* HTML */}
-                    <div className="col-md-6 mb-4">
-
-                      <div className="border rounded p-3">
-
-                        <h5>
-                          HTML & CSS
-                        </h5>
-
-                        <p className="text-muted">
-                          Build responsive websites using HTML5 & CSS3.
-                        </p>
-
-                        <span className="badge badge-primary">
-                          Beginner
-                        </span>
-
-                        <div className="mt-3">
-                          ⭐⭐⭐⭐⭐
+                  <div className="card-body">
+                    {courseLoading || resultsLoading ? (
+                      <p>Calculating your progress...</p>
+                    ) : courseError ? (
+                      <p className="text-danger">{courseError}</p>
+                    ) : subCourses.length === 0 ? (
+                      <p>
+                        Your learning path will appear here once subcourses are
+                        added.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="d-flex justify-content-between mb-2">
+                          <span>Course completion</span>
+                          <strong>{completionPercentage}%</strong>
                         </div>
-
-                        <Link
-                          to="/course"
-                          className="btn btn-primary btn-sm mt-3"
-                        >
-                          Continue
-                        </Link>
-
-                      </div>
-
-                    </div>
-
-
-                    {/* JavaScript */}
-                    <div className="col-md-6 mb-4">
-
-                      <div className="border rounded p-3">
-
-                        <h5>
-                          JavaScript
-                        </h5>
-
-                        <p className="text-muted">
-                          Learn modern JavaScript from scratch.
-                        </p>
-
-                        <span className="badge badge-success">
-                          Intermediate
-                        </span>
-
-                        <div className="mt-3">
-                          ⭐⭐⭐⭐☆
+                        <div className="progress mb-4">
+                          <div
+                            className="progress-bar bg-success"
+                            style={{ width: `${completionPercentage}%` }}
+                          />
                         </div>
+                        <div className="learning-status-container">
+                          <div className="learning-status-item">
+                            <h4>{completedSubCourses}</h4>
+                            <p>Completed</p>
+                          </div>
 
-                        <Link
-                          to="/course"
-                          className="btn btn-success btn-sm mt-3"
-                        >
-                          Continue
-                        </Link>
+                          <div className="learning-status-item">
+                            <h4>{inProgressCount}</h4>
+                            <p>In Progress</p>
+                          </div>
 
-                      </div>
-
-                    </div>
-
-
-                    {/* React */}
-                    <div className="col-md-6">
-
-                      <div className="border rounded p-3">
-
-                        <h5>
-                          React.js
-                        </h5>
-
-                        <p className="text-muted">
-                          Build powerful frontend applications.
-                        </p>
-
-                        <span className="badge badge-warning">
-                          Advanced
-                        </span>
-
-                        <div className="mt-3">
-                          ⭐⭐⭐⭐⭐
+                          <div className="learning-status-item">
+                            <h4>{lockedCount}</h4>
+                            <p>Locked</p>
+                          </div>
                         </div>
+                        <hr />
+                        <div className="learning-status-container">
+                          <div className="learning-status-item">
+                            <h5>
+                              {currentIndex === -1
+                                ? "All subcourses completed!"
+                                : `Next: ${
+                                    subCourses[currentIndex].sub ||
+                                    subCourses[currentIndex].name ||
+                                    "Subcourse"
+                                  }`}
+                            </h5>
 
-                        <Link
-                          to="/course"
-                          className="btn btn-warning btn-sm mt-3"
-                        >
-                          Continue
-                        </Link>
+                            <p className="text-muted">
+                              {currentIndex === -1
+                                ? "Congratulations! You have passed every subcourse."
+                                : "Continue learning and pass the MCQ test to unlock the next subcourse."}
+                            </p>
+                          </div>
 
-                      </div>
-
-                    </div>
-
-
-                    {/* Node */}
-                    <div className="col-md-6">
-
-                      <div className="border rounded p-3">
-
-                        <h5>
-                          Node.js
-                        </h5>
-
-                        <p className="text-muted">
-                          Learn backend development using Node.js.
-                        </p>
-
-                        <span className="badge badge-info">
-                          New
-                        </span>
-
-                        <div className="mt-3">
-                          ⭐⭐⭐⭐☆
+                          <div className="learning-status-action">
+                            <Link to="/course" className="btn btn-primary">
+                              {currentIndex === -1
+                                ? "Review Course"
+                                : "Open My Course"}
+                            </Link>
+                          </div>
                         </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                        <Link
-                          to="/course"
-                          className="btn btn-info btn-sm mt-3"
-                        >
-                          Start
-                        </Link>
-
+            {/* Assigned course */}
+            <div className="row">
+              <div className="col-xl-12">
+                <div className="card">
+                  <div className="card-header d-flex justify-content-between">
+                    <h4 className="card-title">My Enrolled Course</h4>
+                    <Link to="/course" className="btn btn-sm btn-primary">
+                      View Course
+                    </Link>
+                  </div>
+                  <div className="card-body">
+                    {courseLoading ? (
+                      <p>Loading your course...</p>
+                    ) : courseError ? (
+                      <p className="text-danger">{courseError}</p>
+                    ) : assignedCourse ? (
+                      <div className="border rounded p-3">
+                        <h5>{assignedCourse.course || assignedCourse.name}</h5>
+                        <p className="text-muted mb-0">
+                          Duration: {assignedCourse.duration || "Not specified"}
+                        </p>
                       </div>
-
-                    </div>
-
+                    ) : (
+                      <p>You have not been assigned a course yet.</p>
+                    )}
                   </div>
-
                 </div>
-
               </div>
-
             </div>
 
+            {/* Recent saved MCQ results */}
+            <div className="row">
+              <div className="col-lg-12">
+                <div className="card">
+                  <div className="card-header">
+                    <h4 className="card-title">Recent MCQ Results</h4>
+                  </div>
+                  <div className="card-body">
+                    {resultsLoading ? (
+                      <p>Loading results...</p>
+                    ) : resultsError ? (
+                      <p className="text-danger">{resultsError}</p>
+                    ) : recentResults.length === 0 ? (
+                      <p>No MCQ attempts have been submitted yet.</p>
+                    ) : (
+                      <div className="table-responsive">
+                        <table className="table table-hover">
+                          <thead>
+                            <tr>
+                              <th>Subject</th>
+                              <th>Score</th>
+                              <th>Status</th>
+                              <th>Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {recentResults.map((result, index) => {
+                              const subCourseValue =
+                                result.subCourse || result.subcourse;
+
+                              const matchedSubCourse =
+                                typeof subCourseValue === "object"
+                                  ? subCourseValue
+                                  : subCourses.find(
+                                      (item) =>
+                                        String(item._id) ===
+                                        String(subCourseValue),
+                                    );
+
+                              const subject =
+                                matchedSubCourse?.sub ||
+                                matchedSubCourse?.name ||
+                                (typeof matchedSubCourse?.course === "string"
+                                  ? matchedSubCourse.course
+                                  : "") ||
+                                result.subCourseName ||
+                                result.subcourseName ||
+                                "Subcourse";
+                              const percentage = Number(result.percentage) || 0;
+                              const passed =
+                                result.passed === true || percentage >= 70;
+                              const dateValue =
+                                result.createdAt || result.updatedAt;
+                              return (
+                                <tr key={result._id || index}>
+                                  <td>{subject}</td>
+                                  <td>{percentage}%</td>
+                                  <td>
+                                    <span
+                                      className={`badge ${passed ? "badge-success" : "badge-danger"}`}
+                                    >
+                                      {passed ? "Pass" : "Needs improvement"}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    {dateValue
+                                      ? new Date(dateValue).toLocaleDateString()
+                                      : "—"}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-
-          {/* =========================
-              RECENT MCQ RESULTS
-          ========================= */}
-          <div className="row">
-
-            <div className="col-lg-12">
-
-              <div className="card">
-
-                <div className="card-header">
-
-                  <h4 className="card-title">
-                    Recent MCQ Results
-                  </h4>
-
-                </div>
-
-
-                <div className="card-body">
-
-                  <table className="table table-hover">
-
-                    <thead>
-
-                      <tr>
-
-                        <th>
-                          Subject
-                        </th>
-
-                        <th>
-                          Score
-                        </th>
-
-                        <th>
-                          Status
-                        </th>
-
-                      </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                      <tr>
-
-                        <td>
-                          HTML
-                        </td>
-
-                        <td>
-                          95%
-                        </td>
-
-                        <td>
-                          <span className="badge badge-success">
-                            Pass
-                          </span>
-                        </td>
-
-                      </tr>
-
-
-                      <tr>
-
-                        <td>
-                          CSS
-                        </td>
-
-                        <td>
-                          90%
-                        </td>
-
-                        <td>
-                          <span className="badge badge-success">
-                            Pass
-                          </span>
-                        </td>
-
-                      </tr>
-
-
-                      <tr>
-
-                        <td>
-                          JavaScript
-                        </td>
-
-                        <td>
-                          82%
-                        </td>
-
-                        <td>
-                          <span className="badge badge-warning">
-                            Good
-                          </span>
-                        </td>
-
-                      </tr>
-
-
-                      <tr>
-
-                        <td>
-                          React
-                        </td>
-
-                        <td>
-                          75%
-                        </td>
-
-                        <td>
-                          <span className="badge badge-primary">
-                            Average
-                          </span>
-                        </td>
-
-                      </tr>
-
-                    </tbody>
-
-                  </table>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =========================
-              ACHIEVEMENTS + GOALS
-          ========================= */}
-          <div className="row">
-
-
-            {/* Achievements */}
-            <div className="col-xl-6">
-
-              <div className="card">
-
-                <div className="card-header d-flex justify-content-between">
-
-                  <h4 className="card-title">
-                    Achievements
-                  </h4>
-
-                  <span className="badge badge-primary">
-                    Latest
-                  </span>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  <div className="media mb-4">
-
-                    <div className="mr-3">
-
-                      <span className="material-icons fa-2x text-warning">
-                        emoji_events
-                      </span>
-
-                    </div>
-
-                    <div className="media-body">
-
-                      <h5 className="mb-1">
-                        Top Learner
-                      </h5>
-
-                      <small>
-                        Completed 8 Courses Successfully
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="media mb-4">
-
-                    <div className="mr-3">
-
-                      <span className="material-icons fa-2x text-success">
-                        workspace_premium
-                      </span>
-
-                    </div>
-
-                    <div className="media-body">
-
-                      <h5 className="mb-1">
-                        5 Certificates
-                      </h5>
-
-                      <small>
-                        Verified Course Certificates
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="media mb-4">
-
-                    <div className="mr-3">
-
-                      <span className="material-icons fa-2x text-primary">
-                        schedule
-                      </span>
-
-                    </div>
-
-                    <div className="media-body">
-
-                      <h5 className="mb-1">
-                        120 Learning Hours
-                      </h5>
-
-                      <small>
-                        Keep Going!
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="media">
-
-                    <div className="mr-3">
-
-                      <span className="material-icons fa-2x text-danger">
-                        local_fire_department
-                      </span>
-
-                    </div>
-
-                    <div className="media-body">
-
-                      <h5 className="mb-1">
-                        15 Day Streak
-                      </h5>
-
-                      <small>
-                        Daily Learning Active
-                      </small>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Learning Goals */}
-            <div className="col-xl-6">
-
-              <div className="card">
-
-                <div className="card-header">
-
-                  <h4 className="card-title">
-                    Learning Goals
-                  </h4>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <span>
-                        Complete React Course
-                      </span>
-
-                      <strong>
-                        75%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-primary"
-                        style={{ width: "75%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <span>
-                        Finish Node.js
-                      </span>
-
-                      <strong>
-                        40%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-success"
-                        style={{ width: "40%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="mb-4">
-
-                    <div className="d-flex justify-content-between">
-
-                      <span>
-                        MCQ Score Target
-                      </span>
-
-                      <strong>
-                        88%
-                      </strong>
-
-                    </div>
-
-                    <div className="progress mt-2">
-
-                      <div
-                        className="progress-bar bg-warning"
-                        style={{ width: "88%" }}
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="alert alert-primary mt-4">
-
-                    <strong>
-                      Today's Goal
-                    </strong>
-
-                    <p className="mb-0 mt-2">
-                      Complete one lesson and attempt one MCQ test.
-                    </p>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =========================
-              RECENT ACTIVITY
-              + UPCOMING CLASSES
-          ========================= */}
-          <div className="row">
-
-
-            {/* Recent Activity */}
-            <div className="col-xl-6 col-lg-6">
-
-              <div className="card">
-
-                <div className="card-header border-0 pb-2">
-
-                  <h4 className="card-title">
-                    Recent Activity
-                  </h4>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  <div className="activity-item d-flex align-items-center mb-4">
-
-                    <div className="activity-icon bg-primary">
-
-                      <span className="material-icons text-white">
-                        menu_book
-                      </span>
-
-                    </div>
-
-                    <div className="ms-3">
-
-                      <h6 className="mb-1">
-                        Completed HTML Module
-                      </h6>
-
-                      <small className="text-muted">
-                        Today • 10:30 AM
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="activity-item d-flex align-items-center mb-4">
-
-                    <div className="activity-icon bg-success">
-
-                      <span className="material-icons text-white">
-                        check
-                      </span>
-
-                    </div>
-
-                    <div className="ms-3">
-
-                      <h6 className="mb-1">
-                        Passed JavaScript Quiz
-                      </h6>
-
-                      <small className="text-muted">
-                        Yesterday • 5:15 PM
-                      </small>
-
-                    </div>
-
-                  </div>
-
-
-                  <div className="activity-item d-flex align-items-center mb-4">
-
-                    <div className="activity-icon bg-warning">
-
-                      <span className="material-icons text-white">
-                        workspace_premium
-                      </span>
-
-                    </div>
-
-                    <div className="ms-3">
-
-                      <h6 className="mb-1">
-                        Earned CSS Certificate
-                      </h6>
-
-                      <small className="text-muted">
-                        2 Days Ago
-                      </small>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* Upcoming Classes */}
-            <div className="col-xl-6 col-lg-6">
-
-              <div className="card">
-
-                <div className="card-header border-0 pb-2">
-
-                  <h4 className="card-title">
-                    Upcoming Classes
-                  </h4>
-
-                </div>
-
-
-                <div className="card-body">
-
-
-                  <div className="class-item mb-4">
-
-                    <h6>
-                      React.js Advanced
-                    </h6>
-
-                    <small className="text-muted">
-                      Tomorrow • 10:00 AM
-                    </small>
-
-                  </div>
-
-
-                  <hr />
-
-
-                  <div className="class-item mb-4">
-
-                    <h6>
-                      Bootstrap Workshop
-                    </h6>
-
-                    <small className="text-muted">
-                      Friday • 2:00 PM
-                    </small>
-
-                  </div>
-
-
-                  <hr />
-
-
-                  <div className="class-item">
-
-                    <h6>
-                      Node.js Basics
-                    </h6>
-
-                    <small className="text-muted">
-                      Saturday • 11:00 AM
-                    </small>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
         </div>
 
-      </div>  
-
-      {/* =========================
-          FOOTER
-      ========================= */}
-      <div className="footer footer-outer">
-
-        <div className="copyright">
-
-          <p>
-            Copyright © Designed & Developed by
-            <a
-              href="https://dexignlab.com/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {" "}DexignLab
-            </a>
-            {" "}2023
-          </p>
-
+        <div className="footer footer-outer">
+          <div className="copyright">
+            <p>
+              Copyright © Designed &amp; Developed by{" "}
+              <a href="https://dexignlab.com/" target="_blank" rel="noreferrer">
+                DexignLab
+              </a>{" "}
+              2023
+            </p>
+          </div>
         </div>
-
       </div>
-
-    </div>
-
-</Layout>
-
+    </Layout>
   );
+}
+
+function iconCircle(background) {
+  return {
+    width: "70px",
+    height: "70px",
+    background,
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
 }
 
 export default Dashboard;

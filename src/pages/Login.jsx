@@ -14,47 +14,71 @@ function Login() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
 
-  function handleSubmit(e) {
+  // =====================================================
+  // LOGIN
+  // =====================================================
+
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    // Get registered user
-    const storedUser = JSON.parse(
-      localStorage.getItem("brAcademyUser")
-    );
+    // Clear previous message
+    setMessage("");
+    setMessageType("");
 
-    // Check whether user exists
-    if (!storedUser) {
-      setMessage("No account found. Please register first.");
-      setMessageType("error-message");
-      return;
-    }
+    try {
+      // Send login request to backend
+      const response = await fetch("http://localhost:5000/api/students/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password,
+        }),
+      });
 
-    // Check email and password
-    if (
-      email.trim() === storedUser.email &&
-      password === storedUser.password
-    ) {
-      // Save login status
-      localStorage.setItem("loggedIn", "true");
+      const data = await response.json();
 
-      // Save current user
-      localStorage.setItem(
-        "currentUser",
-        JSON.stringify(storedUser)
-      );
+      // =====================================================
+      // LOGIN FAILED
+      // =====================================================
+
+      if (!response.ok) {
+        setMessage(data.message || "Invalid email or password.");
+        setMessageType("error-message");
+        return;
+      }
+
+      // =====================================================
+      // LOGIN SUCCESSFUL
+      // =====================================================
 
       setMessage("Login successful!");
       setMessageType("success-message");
 
-      // Go to dashboard
+      sessionStorage.setItem("token", data.token);
+      sessionStorage.setItem("loggedIn", "true");
+      sessionStorage.setItem("currentStudent", JSON.stringify(data.student));
+
+      // =====================================================
+      // GO TO DASHBOARD
+      // =====================================================
+
       setTimeout(() => {
         navigate("/dashboard");
       }, 500);
-    } else {
-      setMessage("Invalid email or password.");
+    } catch (error) {
+      console.error("Login error:", error);
+
+      setMessage("Unable to connect to the server.");
       setMessageType("error-message");
     }
   }
+
+  // =====================================================
+  // FORGOT PASSWORD
+  // =====================================================
 
   function handleForgotPassword(e) {
     e.preventDefault();
@@ -64,35 +88,23 @@ function Login() {
 
   return (
     <div className="auth-container">
-
-      {/* LEFT SIDE */}
+      {/* =====================================================
+          LEFT SIDE
+      ===================================================== */}
 
       <div className="auth-left">
-
         <div className="brand">
+          <div className="brand-logo">B</div>
 
-          <div className="brand-logo">
-            B
-          </div>
-
-          <span>
-            BR Academy
-          </span>
-
+          <span>BR Academy</span>
         </div>
 
         <div className="welcome-content">
+          <h1>Welcome Back Buddy!</h1>
 
-          <h1>
-            Welcome Back Buddy!
-          </h1>
-
-          <p>
-            Login to continue your learning journey with BR Academy.
-          </p>
+          <p>Login to continue your learning journey with BR Academy.</p>
 
           <div className="features">
-
             <div className="feature">
               <span>✓</span>
               <p>Access your courses</p>
@@ -112,47 +124,37 @@ function Login() {
               <span>✓</span>
               <p>View your achievements</p>
             </div>
-
           </div>
-
         </div>
-
       </div>
 
-      {/* RIGHT SIDE */}
+      {/* =====================================================
+          RIGHT SIDE
+      ===================================================== */}
 
       <div className="auth-right">
-
         <div className="login-box">
+          <h2>Login</h2>
 
-          <h2>
-            Login
-          </h2>
+          <p className="subtitle">Sign in to your BR Academy account</p>
 
-          <p className="subtitle">
-            Sign in to your BR Academy account
-          </p>
+          {/* =====================================================
+              MESSAGE
+          ===================================================== */}
 
-          {/* MESSAGE */}
+          <div className={messageType}>{message}</div>
 
-          <div className={messageType}>
-            {message}
-          </div>
+          {/* =====================================================
+              LOGIN FORM
+          ===================================================== */}
 
-          {/* LOGIN FORM */}
-
-          <form
-            id="loginForm"
-            onSubmit={handleSubmit}
-          >
-
-            {/* EMAIL */}
+          <form id="loginForm" onSubmit={handleSubmit}>
+            {/* =====================================================
+                EMAIL
+            ===================================================== */}
 
             <div className="form-group">
-
-              <label htmlFor="email">
-                Email Address
-              </label>
+              <label htmlFor="email">Email Address</label>
 
               <input
                 type="email"
@@ -162,31 +164,22 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-
             </div>
 
-            {/* PASSWORD */}
+            {/* =====================================================
+                PASSWORD
+            ===================================================== */}
 
             <div className="form-group">
-
               <div className="password-label">
+                <label htmlFor="password">Password</label>
 
-                <label htmlFor="password">
-                  Password
-                </label>
-
-                <a
-                  href="#"
-                  id="forgotPassword"
-                  onClick={handleForgotPassword}
-                >
+                <a href="#" id="forgotPassword" onClick={handleForgotPassword}>
                   Forgot Password?
                 </a>
-
               </div>
 
               <div className="password-box">
-
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
@@ -199,73 +192,47 @@ function Login() {
                 <button
                   type="button"
                   id="togglePassword"
-                  onClick={() =>
-                    setShowPassword(!showPassword)
-                  }
+                  onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
-
               </div>
-
             </div>
 
-            {/* REMEMBER ME */}
+            {/* =====================================================
+                REMEMBER ME
+            ===================================================== */}
 
             <div className="remember">
-
               <label>
-
                 <input
                   type="checkbox"
                   id="rememberMe"
                   checked={rememberMe}
-                  onChange={(e) =>
-                    setRememberMe(e.target.checked)
-                  }
+                  onChange={(e) => setRememberMe(e.target.checked)}
                 />
-
                 Remember me
-
               </label>
-
             </div>
 
-            {/* LOGIN BUTTON */}
+            {/* =====================================================
+                LOGIN BUTTON
+            ===================================================== */}
 
-            <button
-              type="submit"
-              className="login-btn"
-            >
+            <button type="submit" className="login-btn">
               Login
             </button>
-
           </form>
 
-          {/* REGISTER */}
+          {/* =====================================================
+              ADMIN CREATES STUDENT MESSAGE
+          ===================================================== */}
 
           <div className="register-link">
-
-            <span>
-              Don't have an account?
-            </span>
-
-            <a
-              href="/register"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/register");
-              }}
-            >
-              Create Account
-            </a>
-
+            <span>Don't have an account? Contact your administrator.</span>
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }

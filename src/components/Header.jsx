@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import userImage from "../assets/images/user.jpg";
 import "../css/header.css";
 import "../css/theme.css";
 
 function Header({ sidebarOpen, setSidebarOpen }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mobileFeaturesOpen, setMobileFeaturesOpen] = useState(false);
@@ -210,19 +211,27 @@ function Header({ sidebarOpen, setSidebarOpen }) {
 
                 {/* Profile */}
 
+                {/* Profile */}
+
                 <li className="nav-item">
                   <div className="dropdown header-profile2">
-                    <a
+                    <button
+                      type="button"
                       className="nav-link ms-0"
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
+                      onClick={() => navigate("/profile")}
+                      aria-label="Open student profile"
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        cursor: "pointer",
+                      }}
                     >
                       <div className="header-info2 d-flex align-items-center">
                         <div className="d-flex align-items-center sidebar-info"></div>
 
-                        <img src={userImage} alt="User" />
+                        <img src={userImage} alt="Student profile" />
                       </div>
-                    </a>
+                    </button>
                   </div>
                 </li>
               </ul>

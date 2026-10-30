@@ -140,7 +140,7 @@
 
 .course-card-description {
     margin: 0 0 20px;
-
+    padding-top: 5px;
     color: #8b88a5;
 
     font-size: 14px;
@@ -457,3 +457,30 @@
   
   font-size: 16px;
 } 
+
+
+.course-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content:space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.course-completed-badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background-color: #dff9eb;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.course-completed-score {
+  margin-top: 6px;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -1404,3 +1404,43 @@
   width: 100%;
   box-sizing: border-box;
 }
+.learning-status-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.learning-status-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.learning-status-item h4 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.learning-status-item p {
+  margin: 0;
+  font-size: 14px;
+  color: #333;
+}
+
+@media (max-width: 576px) {
+  .learning-status-container {
+    gap: 10px;
+  }
+
+  .learning-status-item h4 {
+    font-size: 17px;
+  }
+
+  .learning-status-item p {
+    font-size: 12px;
+  }
+}

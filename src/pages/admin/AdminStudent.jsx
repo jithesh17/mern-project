@@ -154,6 +154,7 @@ function AdminStudent() {
                       <tr>
                         <th>S.No</th>
                         <th>Student</th>
+                        <th>Email</th>
                         <th>Course</th>
                         <th>Batch</th>
                         <th>Start Date</th>
@@ -172,6 +173,8 @@ function AdminStudent() {
                           {/* STUDENT */}
 
                           <td>{student.student}</td>
+
+                          <td>{student.email}</td>
 
                           {/* COURSE */}
 

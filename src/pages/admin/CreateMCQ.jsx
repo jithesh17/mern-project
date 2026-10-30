@@ -210,7 +210,7 @@ function CreateMCQ() {
       // POST
       // -----------------------------
 
-      const response = await fetch("http://localhost:5000/api/mcq", {
+      const response = await fetch("http://localhost:5000/api/mcqs",{
         method: "POST",
 
         headers: {

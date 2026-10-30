@@ -1,0 +1,308 @@
+/* =========================================
+   UPLOAD MCQ PAGE
+========================================= */
+
+.upload-mcq-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 38px 32px;
+}
+
+/* =========================================
+   PAGE HEADER
+========================================= */
+
+.upload-mcq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.upload-mcq-title h2 {
+  margin: 0;
+  color: #172b4d;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.upload-mcq-title p {
+  margin: 8px 0 0;
+  color: #8792a2;
+  font-size: 15px;
+}
+
+/* =========================================
+   BACK BUTTON
+========================================= */
+
+.upload-back-btn {
+  border: none;
+  background: #ffffff;
+  color: #5146c6;
+  padding: 11px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: 0.2s ease;
+}
+
+.upload-back-btn:hover {
+  background: #5146c6;
+  color: #ffffff;
+}
+
+/* =========================================
+   UPLOAD CARD
+========================================= */
+
+.upload-mcq-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(31, 45, 61, 0.06);
+  max-width: 900px;
+}
+
+/* =========================================
+   FILE LABEL
+========================================= */
+
+.upload-file-label {
+  display: block;
+  color: #172b4d;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* =========================================
+   FILE INPUT
+========================================= */
+
+.upload-file-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dce1e8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #566273;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.upload-file-input:focus {
+  outline: none;
+  border-color: #5146c6;
+}
+
+/* =========================================
+   SUPPORTED FORMAT
+========================================= */
+
+.upload-supported {
+  display: block;
+  margin-top: 8px;
+  color: #929baa;
+  font-size: 13px;
+}
+
+/* =========================================
+   SELECTED FILE
+========================================= */
+
+.upload-selected-file {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: #eef7ff;
+  border: 1px solid #cfe8ff;
+  border-radius: 8px;
+  color: #24628a;
+  font-size: 14px;
+}
+
+/* =========================================
+   ERROR
+========================================= */
+
+.upload-error {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: #fff0f0;
+  border: 1px solid #ffd0d0;
+  border-radius: 8px;
+  color: #d63031;
+  font-size: 14px;
+}
+
+/* =========================================
+   UPLOAD BUTTON
+========================================= */
+
+.upload-submit-btn {
+  margin-top: 24px;
+  border: none;
+  background: #20b968;
+  color: #ffffff;
+  padding: 13px 28px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.upload-submit-btn:hover:not(:disabled) {
+  background: #19a85c;
+  transform: translateY(-1px);
+}
+
+.upload-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   RESULT CARD
+========================================= */
+
+.upload-result-card {
+  margin-top: 28px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 4px 20px rgba(31, 45, 61, 0.06);
+  max-width: 1100px;
+}
+
+.upload-result-card h3 {
+  margin: 0 0 22px;
+  color: #172b4d;
+  font-size: 20px;
+}
+
+/* =========================================
+   RESULT BOXES
+========================================= */
+
+.upload-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.upload-result-box {
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.upload-result-box.total {
+  background: #eef2ff;
+}
+
+.upload-result-box.success {
+  background: #eaf9f0;
+}
+
+.upload-result-box.failed {
+  background: #fff0f0;
+}
+
+.upload-result-box span {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: #6b7280;
+}
+
+.upload-result-box strong {
+  font-size: 25px;
+  color: #172b4d;
+}
+
+/* =========================================
+   FAILED TABLE
+========================================= */
+
+.upload-failed-section {
+  margin-top: 30px;
+}
+
+.upload-failed-section h4 {
+  color: #d63031;
+  margin-bottom: 15px;
+}
+
+.upload-failed-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.upload-failed-table th,
+.upload-failed-table td {
+  padding: 13px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+}
+
+.upload-failed-table th {
+  background: #f7f8fc;
+  color: #172b4d;
+  font-weight: 600;
+}
+
+.upload-failed-table td {
+  color: #5c6675;
+}
+
+/* =========================================
+   SUCCESS LIST
+========================================= */
+
+.upload-success-section {
+  margin-top: 30px;
+}
+
+.upload-success-section h4 {
+  color: #20a464;
+  margin-bottom: 15px;
+}
+
+.upload-success-section ul {
+  padding-left: 20px;
+}
+
+.upload-success-section li {
+  margin-bottom: 8px;
+  color: #596273;
+  font-size: 14px;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 768px) {
+
+  .upload-mcq-page {
+    padding: 25px 18px;
+  }
+
+  .upload-mcq-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .upload-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-mcq-card {
+    padding: 22px;
+  }
+
+}

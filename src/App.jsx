@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
 import Course from "./pages/Course";
 import MCQ from "./pages/MCQ";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCourse from "./pages/admin/AdminCourse";
@@ -21,6 +22,7 @@ import AdminStudentReport from "./pages/admin/AdminStudentReport";
 import AdminTrainerReport from "./pages/admin/AdminTrainerReport";
 import AdminMCQ from "./pages/admin/AdminMCQ";
 import UploadStudents from "./pages/admin/UploadStudents";
+import UploadMCQ from "./pages/admin/UploadMCQ";
 
 import CreateSubCourse from "./pages/admin/CreateSubCourse";
 import EditSubCourse from "./pages/admin/EditSubCourse";
@@ -29,7 +31,7 @@ import EditStudent from "./pages/admin/EditStudent";
 import CreateMCQ from "./pages/admin/CreateMCQ";
 import EditMCQ from "./pages/admin/EditMCQ";
 
-import TrainerLogin from "./pages/TrainerLogin";
+import TrainerLogin from "./pages/trainer/TrainerLogin";
 import TrainerDashboard from "./pages/trainer/TrainerDashboard";
 import TrainerLayout from "./components/TrainerLayout";
 import Attendance from "./pages/trainer/Attendance";
@@ -44,21 +46,18 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<h1>BNR LMS Home</h1>} />
+        <Route path="/" element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/course" element={<Course />} />
 
-        <Route path="/course" element={<Course />} />
+          <Route path="/dashboard" element={<Dashboard />} />
 
-        <Route path="/login" element={<Login />} />
-
-        <Route path="/register" element={<Register />} />
-
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        <Route path="/profile" element={<Profile />} />
-
-        <Route path="/mcq/:course" element={<MCQ />} />
-        <Route path="/course/:course/:topic" element={<CourseContent />} />
-
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/mcq" element={<MCQ />} />
+          <Route path="/mcq/:subCourseId" element={<MCQ />} />
+          <Route path="/course/:course/:topic" element={<CourseContent />} />
+        </Route>
         {/* ===================== ADMIN MODULE ===================== */}
 
         <Route path="/admin" element={<AdminDashboard />} />
@@ -88,40 +87,23 @@ function App() {
 
         <Route path="/admin/sub-course" element={<AdminSubCourse />} />
 
-        <Route
-  path="/admin/trainer"
-  element={<AdminTrainer />}
-/>
+        <Route path="/admin/trainer" element={<AdminTrainer />} />
 
-<Route
-  path="/admin/trainer/create"
-  element={<AdminCreateTrainer />}
-/>
+        <Route path="/admin/trainer/create" element={<AdminCreateTrainer />} />
 
-
-<Route
-  path="/admin/trainer/edit/:id"
-  element={<AdminEditTrainer />}
-/>
-
-
-
-<Route
-  path="/admin/allocate/create"
-  element={<AdminCreateAllocate />}
-/>
-
-<Route
-  path="/admin/allocate/edit/:id"
-  element={<AdminEditAllocation />}
-/>
+        <Route path="/admin/trainer/edit/:id" element={<AdminEditTrainer />} />
 
         <Route
-          path="/admin/sub-course"
-          element={<AdminSubCourse />}
+          path="/admin/allocate/create"
+          element={<AdminCreateAllocate />}
         />
 
+        <Route
+          path="/admin/allocate/edit/:id"
+          element={<AdminEditAllocation />}
+        />
 
+        <Route path="/admin/sub-course" element={<AdminSubCourse />} />
 
         <Route path="/trainer/login" element={<TrainerLogin />} />
 
@@ -136,6 +118,8 @@ function App() {
         <Route path="/admin/mcq/create" element={<CreateMCQ />} />
 
         <Route path="/admin/mcq/edit/:id" element={<EditMCQ />} />
+
+        <Route path="/admin/mcq/upload" element={<UploadMCQ />} />
 
         <Route
           path="/trainer/dashboard"

@@ -9,39 +9,31 @@ import "../../css/admin.css";
 const API_URL = "http://localhost:5000/api";
 
 const batches = ["Batch A", "Batch B", "Batch C"];
-
 const statuses = ["Active", "Completed"];
 
 function EditStudent() {
   const navigate = useNavigate();
-
   const { id } = useParams();
 
   const [courses, setCourses] = useState([]);
-
   const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({
     student: "",
+    email: "",
     course: "",
     batch: batches[0],
     startDate: "",
     status: "Active",
   });
 
-  // =====================================================
   // LOAD DATA
-  // =====================================================
-
   useEffect(() => {
     fetchCourses();
     fetchStudent();
   }, [id]);
 
-  // =====================================================
   // GET COURSES
-  // =====================================================
-
   const fetchCourses = async () => {
     try {
       const response = await fetch(`${API_URL}/courses`);
@@ -51,27 +43,21 @@ function EditStudent() {
       }
 
       const data = await response.json();
-
       console.log("GET courses response:", data);
 
       setCourses(data);
     } catch (error) {
       console.error("Error fetching courses:", error);
-
       alert(error.message);
     }
   };
 
-  // =====================================================
   // GET SINGLE STUDENT
-  // =====================================================
-
   const fetchStudent = async () => {
     try {
       setLoading(true);
 
       const response = await fetch(`${API_URL}/students/${id}`);
-
       const data = await response.json();
 
       console.log("GET student by ID:", data);
@@ -80,36 +66,25 @@ function EditStudent() {
         throw new Error(data.message || "Failed to fetch student");
       }
 
-      // =================================================
       // POPULATE FORM
-      // =================================================
-
       setForm({
         student: data.student || "",
-
-        course: data.course?._id || "",
-
+        email: data.email || "",
+        course: data.course?._id || data.course || "",
         batch: data.batch || batches[0],
-
         startDate: data.startDate ? data.startDate.substring(0, 10) : "",
-
         status: data.status || "Active",
       });
     } catch (error) {
       console.error("Failed to fetch student:", error);
-
       alert(error.message);
-
       navigate("/admin/student");
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
   // HANDLE INPUT
-  // =====================================================
-
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -119,17 +94,17 @@ function EditStudent() {
     }));
   };
 
-  // =====================================================
   // UPDATE STUDENT
-  // =====================================================
-
   const handleUpdate = async (event) => {
     event.preventDefault();
 
-    // Validation
-
     if (!form.student.trim()) {
       alert("Please enter student name");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      alert("Please enter student email");
       return;
     }
 
@@ -153,12 +128,13 @@ function EditStudent() {
 
       const response = await fetch(`${API_URL}/students/${id}`, {
         method: "PUT",
-
         headers: {
           "Content-Type": "application/json",
         },
-
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          email: form.email.trim().toLowerCase(),
+        }),
       });
 
       const data = await response.json();
@@ -170,30 +146,20 @@ function EditStudent() {
       }
 
       alert("Student updated successfully");
-
-      // Go back to list
-
       navigate("/admin/student");
     } catch (error) {
       console.error("Update student error:", error);
-
       alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
   // UI
-  // =====================================================
-
   return (
     <AdminLayout>
       <div className="admin-page">
-        {/* ================================================= */}
         {/* BACK */}
-        {/* ================================================= */}
-
         <button
           type="button"
           className="admin-back-link"
@@ -203,20 +169,13 @@ function EditStudent() {
           Back to Students
         </button>
 
-        {/* ================================================= */}
         {/* FORM */}
-        {/* ================================================= */}
-
         <div className="row">
           <div className="col-lg-12">
             <div className="card admin-form-card">
-              {/* HEADER */}
-
               <div className="card-header">
                 <h4 className="card-title">Edit Student</h4>
               </div>
-
-              {/* BODY */}
 
               <div className="card-body">
                 {loading ? (
@@ -225,13 +184,9 @@ function EditStudent() {
                   </div>
                 ) : (
                   <form onSubmit={handleUpdate}>
-                    {/* ================================================= */}
-                    {/* STUDENT */}
-                    {/* ================================================= */}
-
+                    {/* STUDENT NAME */}
                     <div className="admin-form-group">
                       <label htmlFor="student-name">Student</label>
-
                       <input
                         id="student-name"
                         name="student"
@@ -243,13 +198,23 @@ function EditStudent() {
                       />
                     </div>
 
-                    {/* ================================================= */}
-                    {/* COURSE */}
-                    {/* ================================================= */}
+                    {/* EMAIL */}
+                    <div className="admin-form-group">
+                      <label htmlFor="student-email">Email</label>
+                      <input
+                        id="student-email"
+                        name="email"
+                        type="email"
+                        placeholder="Enter student email"
+                        value={form.email}
+                        onChange={handleChange}
+                        required
+                      />
+                    </div>
 
+                    {/* COURSE */}
                     <div className="admin-form-group">
                       <label htmlFor="student-course">Course</label>
-
                       <select
                         id="student-course"
                         name="course"
@@ -258,7 +223,6 @@ function EditStudent() {
                         required
                       >
                         <option value="">Select Course</option>
-
                         {courses.map((course) => (
                           <option key={course._id} value={course._id}>
                             {course.course}
@@ -267,13 +231,9 @@ function EditStudent() {
                       </select>
                     </div>
 
-                    {/* ================================================= */}
                     {/* BATCH */}
-                    {/* ================================================= */}
-
                     <div className="admin-form-group">
                       <label htmlFor="student-batch">Batch</label>
-
                       <select
                         id="student-batch"
                         name="batch"
@@ -289,13 +249,9 @@ function EditStudent() {
                       </select>
                     </div>
 
-                    {/* ================================================= */}
                     {/* START DATE */}
-                    {/* ================================================= */}
-
                     <div className="admin-form-group">
                       <label htmlFor="student-start">Start Date</label>
-
                       <input
                         id="student-start"
                         name="startDate"
@@ -306,13 +262,9 @@ function EditStudent() {
                       />
                     </div>
 
-                    {/* ================================================= */}
                     {/* STATUS */}
-                    {/* ================================================= */}
-
                     <div className="admin-form-group">
                       <label htmlFor="student-status">Status</label>
-
                       <select
                         id="student-status"
                         name="status"
@@ -327,10 +279,7 @@ function EditStudent() {
                       </select>
                     </div>
 
-                    {/* ================================================= */}
                     {/* BUTTONS */}
-                    {/* ================================================= */}
-
                     <div className="admin-form-actions">
                       <button
                         type="submit"
