@@ -1,1257 +1,701 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import "../../css/dashboard.css";
+import "../../css/theme.css";
 import "../../css/trainer-profile.css";
+import "../../css/trainer.css";
 
-function TrainerProfile() {
 
-  // Temporary trainer data
-  // Later this will come from the backend
+const TrainerProfile = () => {
+  const navigate = useNavigate();
 
-  const trainer = {
-    name: "Trainer",
-    job: "Senior Technical Trainer",
-    email: "trainer@bracademy.com",
-    phone: "+91 98765 43210",
-    specialization: "React, JavaScript & Full Stack Development",
-    experience: "5 Years",
-    joiningDate: "January 10, 2022",
-    location: "Kerala, India",
-    employeeId: "TR-001",
+  const [trainer, setTrainer] = useState(null);
+  const [batches, setBatches] = useState([]);
+  const [students, setStudents] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadTrainerData = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        // =====================================
+        // GET LOGGED-IN TRAINER FROM LOCALSTORAGE
+        // =====================================
+        
+const storedTrainerData =
+  localStorage.getItem("currentTrainer") ||
+  sessionStorage.getItem("currentTrainer");
+        
+const storedTrainer = storedTrainerData
+  ? JSON.parse(storedTrainerData)
+  : null;
+
+if (!storedTrainer || !storedTrainer._id) {
+  setError("Trainer login session not found. Please login again.");
+  setLoading(false);
+  return;
+}
+
+
+        // =====================================
+        // 1. FETCH TRAINER DETAILS
+        // =====================================
+        const trainerResponse = await fetch(
+          `http://localhost:5000/api/trainers/${storedTrainer._id}`
+        );
+
+        const trainerData = await trainerResponse.json();
+
+        if (!trainerResponse.ok) {
+          throw new Error(
+            trainerData.message ||
+              "Failed to fetch trainer details"
+          );
+        }
+
+        // Some APIs return { trainer: {...} }
+        // Some return {...}
+        const trainerDetails =
+          trainerData.trainer || trainerData;
+
+        setTrainer(trainerDetails);
+
+        // =====================================
+        // 2. FETCH ALL ALLOCATIONS
+        // =====================================
+        const allocationResponse = await  fetch(
+          "http://localhost:5000/api/allocations"
+        );
+
+        const allocationData =
+          await allocationResponse.json();
+
+        if (!allocationResponse.ok) {
+          throw new Error(
+            allocationData.message ||
+              "Failed to fetch allocations"
+          );
+        }
+
+        const allAllocations = Array.isArray(
+          allocationData
+        )
+          ? allocationData
+          : allocationData.data || [];
+
+        // =====================================
+        // 3. FILTER ALLOCATIONS FOR THIS TRAINER
+        // =====================================
+        const trainerAllocations =
+          allAllocations.filter((allocation) => {
+            const allocationTrainerId =
+              allocation.trainer?._id ||
+              allocation.trainer;
+
+            return (
+              String(allocationTrainerId) ===
+              String(storedTrainer._id)
+            );
+          });
+
+        setBatches(trainerAllocations);
+
+        // =====================================
+        // 4. FETCH ALL STUDENTS
+        // =====================================
+        const studentResponse = await fetch(
+          "http://localhost:5000/api/students"
+        );
+
+        const studentData =
+          await studentResponse.json();
+
+        if (!studentResponse.ok) {
+          throw new Error(
+            studentData.message ||
+              "Failed to fetch students"
+          );
+        }
+
+        const allStudents = Array.isArray(
+          studentData
+        )
+          ? studentData
+          : studentData.data || [];
+
+        // =====================================
+        // 5. GET TRAINER BATCH NAMES
+        // =====================================
+        const trainerBatchNames =
+          trainerAllocations
+            .map(
+              (allocation) =>
+                allocation.studentBatch
+            )
+            .filter(Boolean);
+
+        // =====================================
+        // 6. FILTER STUDENTS BY TRAINER BATCH
+        // =====================================
+        const trainerStudents =
+          allStudents.filter((student) =>
+            trainerBatchNames.includes(
+              student.batch
+            )
+          );
+
+        setStudents(trainerStudents);
+
+        // Debugging
+        console.log(
+          "Logged-in trainer:",
+          trainerDetails
+        );
+
+        console.log(
+          "Trainer allocations:",
+          trainerAllocations
+        );
+
+        console.log(
+          "Trainer batches:",
+          trainerBatchNames
+        );
+
+        console.log(
+          "Trainer students:",
+          trainerStudents
+        );
+      } catch (err) {
+        console.error(
+          "Trainer profile error:",
+          err
+        );
+
+        setError(
+          err.message ||
+            "Failed to load trainer profile"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTrainerData();
+  }, []);
+
+  // =====================================
+  // LOGOUT
+  // =====================================
+  const handleLogout = () => {
+    localStorage.removeItem("trainerLoggedIn");
+    localStorage.removeItem("currentTrainer");
+     sessionStorage.removeItem("trainerLoggedIn");
+     sessionStorage.removeItem("currentTrainer");
+
+    navigate("/trainer/login");
   };
 
-
-  // Temporary batch data
-
-  const batches = [
-    {
-      id: 1,
-      name: "Batch A",
-      course: "React Development",
-      students: [
-        "John",
-        "Rahul",
-        "Priya",
-        "Arun",
-        "Anitha",
-      ],
-      startDate: "01 Aug 2026",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Batch B",
-      course: "Java Development",
-      students: [
-        "Kiran",
-        "Vishnu",
-        "Meera",
-        "Sneha",
-        "Akhil",
-      ],
-      startDate: "15 Jul 2026",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Batch C",
-      course: "Python Development",
-      students: [
-        "Ravi",
-        "Neha",
-        "Manu",
-        "Divya",
-        "Sanjay",
-      ],
-      startDate: "01 Jun 2026",
-      status: "Active",
-    },
-    {
-      id: 4,
-      name: "Batch D",
-      course: "Full Stack Development",
-      students: [
-        "Amal",
-        "Fahad",
-        "Asha",
-        "Nikhil",
-        "Reshma",
-      ],
-      startDate: "01 May 2026",
-      status: "Completed",
-    },
-    {
-      id: 5,
-      name: "Batch E",
-      course: "Web Development",
-      students: [
-        "Vivek",
-        "Anu",
-        "Rahul",
-        "Maya",
-        "Sree",
-      ],
-      startDate: "01 Apr 2026",
-      status: "Completed",
-    },
-  ];
-
-
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [showPasswordForm, setShowPasswordForm] = useState(false);
-
-  const [profile, setProfile] = useState({
-    name: trainer.name,
-    email: trainer.email,
-    phone: trainer.phone,
-    specialization: trainer.specialization,
-  });
-
-
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-
-  const activeBatches = batches.filter(
-    (batch) => batch.status === "Active"
-  ).length;
-
-
-  const completedBatches = batches.filter(
-    (batch) => batch.status === "Completed"
-  ).length;
-
-
-  const totalStudents = batches.reduce(
-    (total, batch) =>
-      total + batch.students.length,
-    0
-  );
-
-
-  function handleProfileChange(e) {
-
-    const { name, value } = e.target;
-
-    setProfile((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+  // =====================================
+  // LOADING
+  // =====================================
+  if (loading) {
+    return (
+      <div className="dashboard-page">
+        <div className="dashboard-container">
+          <div className="profile-loading">
+            <h3>Loading Trainer Profile...</h3>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-
-  function handleProfileSubmit(e) {
-
-    e.preventDefault();
-
-    alert("Profile updated successfully.");
-
-    setShowEditForm(false);
-  }
-
-
-  function handlePasswordChange(e) {
-
-    const { name, value } = e.target;
-
-    setPasswordData((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  }
-
-
-  function handlePasswordSubmit(e) {
-
-    e.preventDefault();
-
-    if (
-      !passwordData.currentPassword ||
-      !passwordData.newPassword ||
-      !passwordData.confirmPassword
-    ) {
-      alert("Please fill all password fields.");
-      return;
-    }
-
-
-    if (
-      passwordData.newPassword !==
-      passwordData.confirmPassword
-    ) {
-      alert("New password and confirm password do not match.");
-      return;
-    }
-
-
-    if (passwordData.newPassword.length < 6) {
-      alert("New password must contain at least 6 characters.");
-      return;
-    }
-
-
-    alert("Password changed successfully.");
-
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-
-    setShowPasswordForm(false);
-  }
-
-
-  return (
-    <div className="trainer-profile-page">
-
-
-      {/* =====================================
-          PAGE HEADER
-      ====================================== */}
-
-      <div className="trainer-profile-header">
-
-        <div>
-
-          <h2>
-            Trainer Profile
-          </h2>
-
-          <p>
-            View and manage your trainer information.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          PROFILE HERO
-      ====================================== */}
-
-      <div className="trainer-profile-hero">
-
-        <div className="trainer-profile-avatar">
-
-          <span>
-            {trainer.name.charAt(0).toUpperCase()}
-          </span>
-
-        </div>
-
-
-        <div className="trainer-profile-main-info">
-
-          <h3>
-            {profile.name}
-          </h3>
-
-          <p className="trainer-job">
-            {trainer.job}
-          </p>
-
-          <p className="trainer-specialization">
-            {profile.specialization}
-          </p>
-
-          <div className="trainer-profile-meta">
-
-            <span>
-
-              <span className="material-icons">
-                badge
-              </span>
-
-              {trainer.employeeId}
-
-            </span>
-
-
-            <span>
-
-              <span className="material-icons">
-                calendar_month
-              </span>
-
-              Joined {trainer.joiningDate}
-
-            </span>
-
-
-            <span>
-
-              <span className="material-icons">
-                location_on
-              </span>
-
-              {trainer.location}
-
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div className="trainer-profile-actions">
-
-          <button
-            type="button"
-            className="trainer-edit-button"
-            onClick={() =>
-              setShowEditForm(!showEditForm)
-            }
-          >
-
-            <span className="material-icons">
-              edit
-            </span>
-
-            Edit Profile
-
-          </button>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          SUMMARY CARDS
-      ====================================== */}
-
-      <div className="trainer-profile-summary">
-
-
-        <div className="profile-summary-card profile-students-card">
-
-          <div className="profile-summary-icon">
-
-            <span className="material-icons">
-              groups
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {totalStudents}
-            </h3>
-
-            <p>
-              Total Students
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="profile-summary-card profile-active-card">
-
-          <div className="profile-summary-icon">
-
-            <span className="material-icons">
-              play_circle
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {activeBatches}
-            </h3>
-
-            <p>
-              Active Batches
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="profile-summary-card profile-completed-card">
-
-          <div className="profile-summary-icon">
-
-            <span className="material-icons">
-              check_circle
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {completedBatches}
-            </h3>
-
-            <p>
-              Completed Batches
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="profile-summary-card profile-experience-card">
-
-          <div className="profile-summary-icon">
-
-            <span className="material-icons">
-              workspace_premium
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {trainer.experience}
-            </h3>
-
-            <p>
-              Experience
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          MAIN PROFILE GRID
-      ====================================== */}
-
-      <div className="trainer-profile-grid">
-
-
-        {/* =================================
-            PERSONAL INFORMATION
-        ================================== */}
-
-        <div className="trainer-profile-card">
-
-          <div className="trainer-card-title">
-
-            <div className="trainer-title-icon blue-icon">
-
-              <span className="material-icons">
-                person
-              </span>
-
-            </div>
-
-            <div>
-
-              <h4>
-                Personal Information
-              </h4>
-
-              <p>
-                Your basic trainer information
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="trainer-info-list">
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                person
-              </span>
-
-              <div>
-
-                <label>
-                  Full Name
-                </label>
-
-                <strong>
-                  {profile.name}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                work
-              </span>
-
-              <div>
-
-                <label>
-                  Job / Designation
-                </label>
-
-                <strong>
-                  {trainer.job}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                email
-              </span>
-
-              <div>
-
-                <label>
-                  Email
-                </label>
-
-                <strong>
-                  {profile.email}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                phone
-              </span>
-
-              <div>
-
-                <label>
-                  Phone
-                </label>
-
-                <strong>
-                  {profile.phone}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                code
-              </span>
-
-              <div>
-
-                <label>
-                  Specialization
-                </label>
-
-                <strong>
-                  {profile.specialization}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            <div className="trainer-info-item">
-
-              <span className="material-icons">
-                event
-              </span>
-
-              <div>
-
-                <label>
-                  Joining Date
-                </label>
-
-                <strong>
-                  {trainer.joiningDate}
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        {/* =================================
-            ACCOUNT INFORMATION
-        ================================== */}
-
-        <div className="trainer-profile-card">
-
-          <div className="trainer-card-title">
-
-            <div className="trainer-title-icon green-icon">
-
-              <span className="material-icons">
-                verified_user
-              </span>
-
-            </div>
-
-            <div>
-
-              <h4>
-                Account Information
-              </h4>
-
-              <p>
-                Trainer account details
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div className="trainer-account-list">
-
-
-            <div className="trainer-account-row">
-
-              <div>
-
-                <span className="account-label">
-                  Account Status
-                </span>
-
-                <strong>
-                  Active
-                </strong>
-
-              </div>
-
-              <span className="account-status active-account">
-                Active
-              </span>
-
-            </div>
-
-
-            <div className="trainer-account-row">
-
-              <div>
-
-                <span className="account-label">
-                  Employee ID
-                </span>
-
-                <strong>
-                  {trainer.employeeId}
-                </strong>
-
-              </div>
-
-              <span className="material-icons">
-                badge
-              </span>
-
-            </div>
-
-
-            <div className="trainer-account-row">
-
-              <div>
-
-                <span className="account-label">
-                  Role
-                </span>
-
-                <strong>
-                  Trainer
-                </strong>
-
-              </div>
-
-              <span className="material-icons">
-                school
-              </span>
-
-            </div>
-
-
-            <div className="trainer-account-row">
-
-              <div>
-
-                <span className="account-label">
-                  Experience
-                </span>
-
-                <strong>
-                  {trainer.experience}
-                </strong>
-
-              </div>
-
-              <span className="material-icons">
-                workspace_premium
-              </span>
-
-            </div>
-
-
-            <div className="trainer-account-row">
-
-              <div>
-
-                <span className="account-label">
-                  Location
-                </span>
-
-                <strong>
-                  {trainer.location}
-                </strong>
-
-              </div>
-
-              <span className="material-icons">
-                location_on
-              </span>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          ASSIGNED BATCHES
-      ====================================== */}
-
-      <div className="trainer-profile-card assigned-batches-card">
-
-        <div className="trainer-card-title">
-
-          <div className="trainer-title-icon purple-icon">
-
-            <span className="material-icons">
-              class
-            </span>
-
-          </div>
-
-          <div>
-
-            <h4>
-              Assigned Batches
-            </h4>
-
-            <p>
-              Batches currently assigned to you
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="assigned-batches-list">
-
-          {batches.map((batch) => (
-
-            <div
-              className="assigned-batch-item"
-              key={batch.id}
-            >
-
-              <div className="assigned-batch-main">
-
-                <div className="assigned-batch-icon">
-
-                  <span className="material-icons">
-                    class
-                  </span>
-
-                </div>
-
-
-                <div>
-
-                  <h5>
-                    {batch.name}
-                  </h5>
-
-                  <p>
-                    {batch.course}
-                  </p>
-
-                </div>
-
-              </div>
-
-
-              <div className="assigned-batch-details">
-
-                <div>
-
-                  <span>
-                    Students
-                  </span>
-
-                  <strong>
-                    {batch.students.length}
-                  </strong>
-
-                </div>
-
-
-                <div>
-
-                  <span>
-                    Start Date
-                  </span>
-
-                  <strong>
-                    {batch.startDate}
-                  </strong>
-
-                </div>
-
-
-                <span
-                  className={`assigned-batch-status ${
-                    batch.status === "Active"
-                      ? "assigned-active"
-                      : "assigned-completed"
-                  }`}
-                >
-                  {batch.status}
-                </span>
-
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          BATCH STUDENTS
-      ====================================== */}
-
-      <div className="trainer-profile-card batch-students-card">
-
-        <div className="trainer-card-title">
-
-          <div className="trainer-title-icon orange-icon">
-
-            <span className="material-icons">
-              groups
-            </span>
-
-          </div>
-
-          <div>
-
-            <h4>
-              Batch Student List
-            </h4>
-
-            <p>
-              Students belonging to your assigned batches
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="batch-students-grid">
-
-          {batches.map((batch) => (
-
-            <div
-              className="batch-student-group"
-              key={batch.id}
-            >
-
-              <div className="batch-student-group-header">
-
-                <div>
-
-                  <h5>
-                    {batch.name}
-                  </h5>
-
-                  <span>
-                    {batch.course}
-                  </span>
-
-                </div>
-
-                <strong>
-                  {batch.students.length} Students
-                </strong>
-
-              </div>
-
-
-              <div className="student-mini-list">
-
-                {batch.students.map(
-                  (student, index) => (
-
-                    <div
-                      className="student-mini-item"
-                      key={index}
-                    >
-
-                      <div className="student-mini-avatar">
-                        {student.charAt(0).toUpperCase()}
-                      </div>
-
-                      <span>
-                        {student}
-                      </span>
-
-                    </div>
-
-                  )
-                )}
-
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      </div>
-
-
-      {/* =====================================
-          EDIT PROFILE FORM
-      ====================================== */}
-
-      {showEditForm && (
-
-        <div className="trainer-profile-card profile-form-card">
-
-          <div className="trainer-card-title">
-
-            <div className="trainer-title-icon blue-icon">
-
-              <span className="material-icons">
-                edit
-              </span>
-
-            </div>
-
-            <div>
-
-              <h4>
-                Edit Profile
-              </h4>
-
-              <p>
-                Update your personal information
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <form
-            className="trainer-profile-form"
-            onSubmit={handleProfileSubmit}
-          >
-
-            <div className="profile-form-grid">
-
-              <div className="profile-form-group">
-
-                <label>
-                  Full Name
-                </label>
-
-                <input
-                  type="text"
-                  name="name"
-                  value={profile.name}
-                  onChange={handleProfileChange}
-                />
-
-              </div>
-
-
-              <div className="profile-form-group">
-
-                <label>
-                  Email
-                </label>
-
-                <input
-                  type="email"
-                  name="email"
-                  value={profile.email}
-                  onChange={handleProfileChange}
-                />
-
-              </div>
-
-
-              <div className="profile-form-group">
-
-                <label>
-                  Phone
-                </label>
-
-                <input
-                  type="text"
-                  name="phone"
-                  value={profile.phone}
-                  onChange={handleProfileChange}
-                />
-
-              </div>
-
-
-              <div className="profile-form-group">
-
-                <label>
-                  Specialization
-                </label>
-
-                <input
-                  type="text"
-                  name="specialization"
-                  value={profile.specialization}
-                  onChange={handleProfileChange}
-                />
-
-              </div>
-
-            </div>
-
-
-            <div className="profile-form-actions">
-
-              <button
-                type="button"
-                className="profile-cancel-button"
-                onClick={() =>
-                  setShowEditForm(false)
-                }
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="profile-save-button"
-              >
-
-                <span className="material-icons">
-                  save
-                </span>
-
-                Save Changes
-
-              </button>
-
-            </div>
-
-          </form>
-
-        </div>
-
-      )}
-
-
-      {/* =====================================
-          SECURITY
-      ====================================== */}
-
-      <div className="trainer-profile-card security-card">
-
-        <div className="trainer-card-title">
-
-          <div className="trainer-title-icon red-icon">
-
-            <span className="material-icons">
-              lock
-            </span>
-
-          </div>
-
-          <div>
-
-            <h4>
-              Security
-            </h4>
-
-            <p>
-              Manage your account password
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {!showPasswordForm ? (
-
-          <div className="security-content">
-
-            <div>
-
-              <strong>
-                Password
-              </strong>
-
-              <p>
-                Keep your password secure and updated regularly.
-              </p>
-
-            </div>
+  // =====================================
+  // ERROR
+  // =====================================
+  if (error) {
+    return (
+      <div className="dashboard-page">
+        <div className="dashboard-container">
+          <div className="profile-error">
+            <h3>Something went wrong</h3>
+
+            <p>{error}</p>
 
             <button
               type="button"
-              className="change-password-button"
               onClick={() =>
-                setShowPasswordForm(true)
+                window.location.reload()
               }
             >
-
-              <span className="material-icons">
-                lock_reset
-              </span>
-
-              Change Password
-
+              Try Again
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================
+  // TRAINER DATA
+  // =====================================
+  const trainerName =
+    trainer?.name || "Trainer";
+
+  const trainerEmail =
+    trainer?.email || "-";
+
+  const trainerCourse =
+    trainer?.course || "-";
+
+  const trainerId =
+    trainer?._id || "-";
+
+  const totalStudents =
+    students.length;
+
+  const totalBatches =
+    batches.length;
+
+  // =====================================
+  // JOINED DATE
+  // =====================================
+  const joinedDate = trainer?.createdAt
+    ? new Date(
+        trainer.createdAt
+      ).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "-";
+
+  return (
+    <div className="dashboard-page">
+      <div className="dashboard-container">
+
+        {/* ================================= */}
+        {/* PAGE HEADER */}
+        {/* ================================= */}
+
+        <div className="page-header">
+          <div>
+            <h2>Trainer Profile</h2>
+
+            <p>
+              View your trainer information,
+              assigned batches and students.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="logout-btn"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+
+        {/* ================================= */}
+        {/* PROFILE TOP SECTION */}
+        {/* ================================= */}
+
+        <div className="trainer-profile-top">
+
+          {/* PROFILE CARD */}
+
+          <div className="trainer-profile-card">
+
+            <div className="trainer-avatar-large">
+              {trainerName
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+
+            <div className="trainer-profile-main">
+
+              <h2>{trainerName}</h2>
+
+              <p className="trainer-designation">
+                {trainer?.designation ||
+                  "Trainer"}
+              </p>
+
+              <p className="trainer-email">
+                {trainerEmail}
+              </p>
+
+            </div>
 
           </div>
 
-        ) : (
+          {/* STATS */}
 
-          <form
-            className="password-form"
-            onSubmit={handlePasswordSubmit}
-          >
+          <div className="trainer-stats">
 
-            <div className="profile-form-grid">
-
-              <div className="profile-form-group">
-
-                <label>
-                  Current Password
-                </label>
-
-                <input
-                  type="password"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                />
-
-              </div>
-
-
-              <div className="profile-form-group">
-
-                <label>
-                  New Password
-                </label>
-
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                />
-
-              </div>
-
-
-              <div className="profile-form-group">
-
-                <label>
-                  Confirm New Password
-                </label>
-
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                />
-
-              </div>
-
+            <div className="trainer-stat-card">
+              <span>Total Batches</span>
+              <strong>
+                {totalBatches}
+              </strong>
             </div>
 
-
-            <div className="profile-form-actions">
-
-              <button
-                type="button"
-                className="profile-cancel-button"
-                onClick={() =>
-                  setShowPasswordForm(false)
-                }
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="profile-save-button"
-              >
-
-                <span className="material-icons">
-                  lock
-                </span>
-
-                Update Password
-
-              </button>
-
+            <div className="trainer-stat-card">
+              <span>Total Students</span>
+              <strong>
+                {totalStudents}
+              </strong>
             </div>
 
-          </form>
+          </div>
 
-        )}
+        </div>
+
+        {/* ================================= */}
+        {/* TRAINER INFORMATION */}
+        {/* ================================= */}
+
+        <div className="profile-section">
+
+          <div className="section-title">
+            <h3>Trainer Information</h3>
+          </div>
+
+          <div className="trainer-info-grid">
+
+            <div className="trainer-info-item">
+              <span>Trainer Name</span>
+              <strong>
+                {trainerName}
+              </strong>
+            </div>
+
+            <div className="trainer-info-item">
+              <span>Email</span>
+              <strong>
+                {trainerEmail}
+              </strong>
+            </div>
+
+            <div className="trainer-info-item">
+              <span>Course</span>
+              <strong>
+                {trainerCourse}
+              </strong>
+            </div>
+
+            <div className="trainer-info-item">
+              <span>Trainer ID</span>
+              <strong>
+                {trainerId}
+              </strong>
+            </div>
+
+            <div className="trainer-info-item">
+              <span>Designation</span>
+              <strong>
+                {trainer?.designation ||
+                  "Trainer"}
+              </strong>
+            </div>
+
+            <div className="trainer-info-item">
+              <span>Joined Date</span>
+              <strong>
+                {joinedDate}
+              </strong>
+            </div>
+
+            {trainer?.phone && (
+              <div className="trainer-info-item">
+                <span>Phone</span>
+                <strong>
+                  {trainer.phone}
+                </strong>
+              </div>
+            )}
+
+            {trainer?.specialization && (
+              <div className="trainer-info-item">
+                <span>Specialization</span>
+                <strong>
+                  {trainer.specialization}
+                </strong>
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+        {/* ================================= */}
+        {/* ASSIGNED BATCHES */}
+        {/* ================================= */}
+
+        <div className="profile-section">
+
+          <div className="section-title">
+            <h3>Assigned Batches</h3>
+
+            <span>
+              {totalBatches} Batches
+            </span>
+          </div>
+
+          {batches.length === 0 ? (
+            <div className="empty-state">
+              <h4>No Batches Assigned</h4>
+
+              <p>
+                You currently don't have
+                any assigned batches.
+              </p>
+            </div>
+          ) : (
+            <div className="assigned-batches-grid">
+
+              {batches.map((batch) => (
+                <div
+                  className="assigned-batch-card"
+                  key={batch._id}
+                >
+
+                  <div className="batch-card-header">
+
+                    <div>
+                      <span className="batch-label">
+                        Batch
+                      </span>
+
+                      <h4>
+                        {batch.studentBatch ||
+                          "-"}
+                      </h4>
+                    </div>
+
+                    <span
+                      className={`batch-status ${
+                        (
+                          batch.status ||
+                          "Active"
+                        ).toLowerCase()
+                      }`}
+                    >
+                      {batch.status ||
+                        "Active"}
+                    </span>
+
+                  </div>
+
+                  <div className="batch-card-details">
+
+                    <div>
+                      <span>Course</span>
+
+                      <strong>
+                        {batch.course?.course ||
+                          batch.course?.name ||
+                          "-"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Start Date</span>
+
+                      <strong>
+                        {batch.startDate
+                          ? new Date(
+                              batch.startDate
+                            ).toLocaleDateString(
+                              "en-IN"
+                            )
+                          : "-"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>End Date</span>
+
+                      <strong>
+                        {batch.endDate
+                          ? new Date(
+                              batch.endDate
+                            ).toLocaleDateString(
+                              "en-IN"
+                            )
+                          : "-"}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        </div>
+
+        {/* ================================= */}
+        {/* STUDENT LIST */}
+        {/* ================================= */}
+
+        <div className="profile-section">
+
+          <div className="section-title">
+
+            <div>
+              <h3>My Students</h3>
+
+              <p>
+                Students from your assigned
+                batches.
+              </p>
+            </div>
+
+            <span>
+              {totalStudents} Students
+            </span>
+
+          </div>
+
+          {batches.length === 0 ? (
+            <div className="empty-state">
+
+              <h4>No Batches Assigned</h4>
+
+              <p>
+                Students will appear here
+                after a batch is assigned.
+              </p>
+
+            </div>
+          ) : (
+            <div className="batch-students-grid">
+
+              {batches.map((batch) => {
+
+                // Students belonging to
+                // this particular batch
+                const batchStudents =
+                  students.filter(
+                    (student) =>
+                      student.batch ===
+                      batch.studentBatch
+                  );
+
+                return (
+                  <div
+                    className="batch-student-group"
+                    key={batch._id}
+                  >
+
+                    {/* BATCH HEADER */}
+
+                    <div className="batch-student-group-header">
+
+                      <div>
+                        <h5>
+                          {batch.studentBatch ||
+                            "-"}
+                        </h5>
+
+                        <span>
+                          {batch.course?.course ||
+                            batch.course?.name ||
+                            "-"}
+                        </span>
+                      </div>
+
+                      <strong>
+                        {
+                          batchStudents.length
+                        }{" "}
+                        Students
+                      </strong>
+
+                    </div>
+
+                    {/* STUDENTS */}
+
+                    <div className="student-mini-list">
+
+                      {batchStudents.length ===
+                      0 ? (
+                        <div className="student-mini-item">
+
+                          <div className="student-mini-avatar">
+                            -
+                          </div>
+
+                          <span>
+                            No students found
+                            in this batch.
+                          </span>
+
+                        </div>
+                      ) : (
+                        batchStudents.map(
+                          (student) => (
+                            <div
+                              className="student-mini-item"
+                              key={
+                                student._id
+                              }
+                            >
+
+                              <div className="student-mini-avatar">
+                                {student.student
+                                  ?.charAt(
+                                    0
+                                  )
+                                  .toUpperCase() ||
+                                  "S"}
+                              </div>
+
+                              <div className="student-mini-info">
+
+                                <strong>
+                                  {
+                                    student.student
+                                  }
+                                </strong>
+
+                                <span>
+                                  {
+                                    student.batch
+                                  }
+                                </span>
+
+                              </div>
+
+                            </div>
+                          )
+                        )
+                      )}
+
+                    </div>
+
+                  </div>
+                );
+              })}
+
+            </div>
+          )}
+
+        </div>
 
       </div>
-
     </div>
   );
-}
+};
 
 export default TrainerProfile;

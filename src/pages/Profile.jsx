@@ -256,14 +256,15 @@ function Profile() {
               <div className="personal-grid">
                 <div className="personal-item">
                   <span className="personal-label">Full Name</span>
-                  <span className="personal-value">{studentName}</span>
-                </div>
+
+                  <span className="personal-value">Manjunathan M</span>
+                </div> 
 
                 <div className="personal-item">
                   <span className="personal-label">Email</span>
                   <span className="personal-value">{studentEmail}</span>
                 </div>
-
+ 
                 <div className="personal-item">
                   <span className="personal-label">Assigned Course</span>
                   <span className="personal-value">

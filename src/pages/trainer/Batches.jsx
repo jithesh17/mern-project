@@ -1,570 +1,286 @@
-import { useState } from "react";
-import "../../css/batches.css";
+
+import { useEffect, useMemo, useState } from "react";
+import "../../css/Batches.css";
 
 function Batches() {
-
-  // Temporary batch data
-  // Later this data will come from the backend/database
-
-  const batchesData = [
-    {
-      id: 1,
-      name: "Batch A",
-      course: "React Development",
-      trainer: "Trainer",
-      students: 5,
-      startDate: "2026-08-01",
-      endDate: "2026-10-31",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Batch B",
-      course: "Java Development",
-      trainer: "Trainer",
-      students: 5,
-      startDate: "2026-07-15",
-      endDate: "2026-10-15",
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Batch C",
-      course: "Python Development",
-      trainer: "Trainer",
-      students: 5,
-      startDate: "2026-06-01",
-      endDate: "2026-09-30",
-      status: "Active",
-    },
-    {
-      id: 4,
-      name: "Batch D",
-      course: "Full Stack Development",
-      trainer: "Trainer",
-      students: 5,
-      startDate: "2026-05-01",
-      endDate: "2026-08-31",
-      status: "Completed",
-    },
-    {
-      id: 5,
-      name: "Batch E",
-      course: "Web Development",
-      trainer: "Trainer",
-      students: 5,
-      startDate: "2026-04-01",
-      endDate: "2026-07-31",
-      status: "Completed",
-    },
-  ];
-
-
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All Status");
 
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        setLoading(true);
+        setError("");
 
-  // Filter batches
+        const response = await fetch(
+          "http://localhost:5000/api/batches"
+        );
 
-  const filteredBatches = batchesData.filter((batch) => {
+        const data = await response.json();
 
-    const searchValue = search.toLowerCase();
+        if (!response.ok || !data.success) {
+          throw new Error(
+            data.message || "Failed to fetch batches"
+          );
+        }
 
-    const matchesSearch =
-      batch.name.toLowerCase().includes(searchValue) ||
-      batch.course.toLowerCase().includes(searchValue) ||
-      batch.trainer.toLowerCase().includes(searchValue);
+        setBatches(data.batches || []);
+      } catch (err) {
+        console.error("Fetch batches error:", err);
+        setError(err.message || "Unable to load batches");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const matchesStatus =
-      selectedStatus === "All" ||
-      batch.status === selectedStatus;
+    fetchBatches();
+  }, []);
 
-    return matchesSearch && matchesStatus;
-  });
+  const getStatus = (batch) => {
+    if (batch.status === "Dropped") return "Dropped";
+    if (batch.status === "Completed") return "Completed";
 
+    if (
+      batch.endDate &&
+      new Date(batch.endDate) < new Date()
+    ) {
+      return "Completed";
+    }
 
-  return (
-    <div className="batches-page">
+    return batch.status || "Active";
+  };
 
-      {/* ================================
-          PAGE HEADER
-      ================================= */}
+  const filteredBatches = useMemo(() => {
+    return batches.filter((batch) => {
+      const searchText = search.toLowerCase();
 
-      <div className="batches-header">
+      const matchesSearch = [
+        batch.studentBatch,
+        batch.course?.course,
+        batch.trainer?.name,
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(searchText)
+      );
 
+      const matchesStatus =
+        statusFilter === "All Status" ||
+        getStatus(batch) === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [batches, search, statusFilter]);
+
+  const activeCount = batches.filter(
+    (batch) => getStatus(batch) === "Active"
+  ).length;
+
+  const completedCount = batches.filter(
+    (batch) => getStatus(batch) === "Completed"
+  ).length;
+
+  const totalStudents = batches.reduce(
+    (total, batch) => total + Number(batch.studentCount || 0),
+    0
+  );
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleDateString("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: "UTC",
+    });
+  };
+
+  
+return (
+  <div className="batches-page">
+
+    <div className="batches-header">
+      <h2>Batches</h2>
+      <p>Manage your assigned batches</p>
+    </div>
+
+    {/* Summary Cards */}
+    <div className="batches-summary">
+
+      <div className="batch-summary-card total-batch-card">
+        <div className="batch-summary-icon">
+          <span className="material-icons">book</span>
+        </div>
         <div>
-
-          <h2>
-            Batches
-          </h2>
-
-          <p>
-            View and manage the batches assigned to you.
-          </p>
-
+          <h3>{batches.length}</h3>
+          <p>Total Batches</p>
         </div>
-
       </div>
 
-
-      {/* ================================
-          SUMMARY CARDS
-      ================================= */}
-
-      <div className="batches-summary">
-
-
-        {/* Total Batches */}
-
-        <div className="batch-summary-card total-batch-card">
-
-          <div className="batch-summary-icon">
-
-            <span className="material-icons">
-              class
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {batchesData.length}
-            </h3>
-
-            <p>
-              Total Batches
-            </p>
-
-          </div>
-
+      <div className="batch-summary-card active-batch-card">
+        <div className="batch-summary-icon">
+          <span className="material-icons">play_circle</span>
         </div>
-
-
-        {/* Active Batches */}
-
-        <div className="batch-summary-card active-batch-card">
-
-          <div className="batch-summary-icon">
-
-            <span className="material-icons">
-              play_circle
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {
-                batchesData.filter(
-                  (batch) =>
-                    batch.status === "Active"
-                ).length
-              }
-            </h3>
-
-            <p>
-              Active Batches
-            </p>
-
-          </div>
-
+        <div>
+          <h3>
+            {batches.filter(b => b.status === "Active").length}
+          </h3>
+          <p>Active Batches</p>
         </div>
-
-
-        {/* Completed Batches */}
-
-        <div className="batch-summary-card completed-batch-card">
-
-          <div className="batch-summary-icon">
-
-            <span className="material-icons">
-              check_circle
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {
-                batchesData.filter(
-                  (batch) =>
-                    batch.status === "Completed"
-                ).length
-              }
-            </h3>
-
-            <p>
-              Completed Batches
-            </p>
-
-          </div>
-
-        </div>
-
-
-        {/* Total Students */}
-
-        <div className="batch-summary-card students-batch-card">
-
-          <div className="batch-summary-icon">
-
-            <span className="material-icons">
-              groups
-            </span>
-
-          </div>
-
-          <div>
-
-            <h3>
-              {
-                batchesData.reduce(
-                  (total, batch) =>
-                    total + batch.students,
-                  0
-                )
-              }
-            </h3>
-
-            <p>
-              Total Students
-            </p>
-
-          </div>
-
-        </div>
-
       </div>
 
-
-      {/* ================================
-          FILTERS
-      ================================= */}
-
-      <div className="batches-filter-card">
-
-        <div className="batches-filter">
-
-
-          {/* Search */}
-
-          <div className="batch-filter-group">
-
-            <label>
-              Search Batch
-            </label>
-
-            <div className="batch-search-box">
-
-              <span className="material-icons">
-                search
-              </span>
-
-              <input
-                type="text"
-                placeholder="Search by batch, course or trainer"
-                value={search}
-                onChange={(e) =>
-                  setSearch(e.target.value)
-                }
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* Status */}
-
-          <div className="batch-filter-group">
-
-            <label>
-              Status
-            </label>
-
-            <select
-              value={selectedStatus}
-              onChange={(e) =>
-                setSelectedStatus(e.target.value)
-              }
-            >
-
-              <option value="All">
-                All Status
-              </option>
-
-              <option value="Active">
-                Active
-              </option>
-
-              <option value="Completed">
-                Completed
-              </option>
-
-            </select>
-
-          </div>
-
+      <div className="batch-summary-card completed-batch-card">
+        <div className="batch-summary-icon">
+          <span className="material-icons">check_circle</span>
         </div>
-
+        <div>
+          <h3>
+            {batches.filter(b => b.status === "Completed").length}
+          </h3>
+          <p>Completed Batches</p>
+        </div>
       </div>
 
-
-      {/* ================================
-          BATCH TABLE
-      ================================= */}
-
-      <div className="batches-table-card">
-
-
-        {/* Table Header */}
-
-        <div className="batches-table-header">
-
-          <div>
-
-            <h4>
-              Batch List
-            </h4>
-
-            <span>
-              {filteredBatches.length} batch
-              {filteredBatches.length !== 1 ? "es" : ""}
-            </span>
-
-          </div>
-
+      <div className="batch-summary-card students-batch-card">
+        <div className="batch-summary-icon">
+          <span className="material-icons">groups</span>
         </div>
-
-
-        {/* Table */}
-
-        <div className="batches-table-wrapper">
-
-          <table className="batches-table">
-
-            <thead>
-
-              <tr>
-
-                <th>
-                  #
-                </th>
-
-                <th>
-                  Batch
-                </th>
-
-                <th>
-                  Course
-                </th>
-
-                <th>
-                  Trainer
-                </th>
-
-                <th>
-                  Students
-                </th>
-
-                <th>
-                  Start Date
-                </th>
-
-                <th>
-                  End Date
-                </th>
-
-                <th>
-                  Status
-                </th>
-
-                <th>
-                  Action
-                </th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              {filteredBatches.length > 0 ? (
-
-                filteredBatches.map(
-                  (batch, index) => (
-
-                    <tr key={batch.id}>
-
-
-                      {/* Number */}
-
-                      <td>
-                        {index + 1}
-                      </td>
-
-
-                      {/* Batch Name */}
-
-                      <td>
-
-                        <div className="batch-name-cell">
-
-                          <div className="batch-icon">
-
-                            <span className="material-icons">
-                              class
-                            </span>
-
-                          </div>
-
-                          <strong>
-                            {batch.name}
-                          </strong>
-
-                        </div>
-
-                      </td>
-
-
-                      {/* Course */}
-
-                      <td>
-                        {batch.course}
-                      </td>
-
-
-                      {/* Trainer */}
-
-                      <td>
-
-                        <div className="batch-trainer-cell">
-
-                          <div className="batch-trainer-avatar">
-                            T
-                          </div>
-
-                          <span>
-                            {batch.trainer}
-                          </span>
-
-                        </div>
-
-                      </td>
-
-
-                      {/* Students */}
-
-                      <td>
-
-                        <div className="batch-students-cell">
-
-                          <span className="material-icons">
-                            groups
-                          </span>
-
-                          <span>
-                            {batch.students}
-                          </span>
-
-                        </div>
-
-                      </td>
-
-
-                      {/* Start Date */}
-
-                      <td>
-                        {batch.startDate}
-                      </td>
-
-
-                      {/* End Date */}
-
-                      <td>
-                        {batch.endDate}
-                      </td>
-
-
-                      {/* Status */}
-
-                      <td>
-
-                        <span
-                          className={`batch-status ${
-                            batch.status === "Active"
-                              ? "batch-status-active"
-                              : "batch-status-completed"
-                          }`}
-                        >
-
-                          {batch.status}
-
-                        </span>
-
-                      </td>
-
-
-                      {/* Action */}
-
-                      <td>
-
-                        <button
-                          type="button"
-                          className="batch-view-button"
-                          title="View Batch"
-                        >
-
-                          <span className="material-icons">
-                            visibility
-                          </span>
-
-                        </button>
-
-                      </td>
-
-                    </tr>
-
-                  )
-                )
-
-              ) : (
-
-                <tr>
-
-                  <td
-                    colSpan="9"
-                    className="batches-no-data"
-                  >
-
-                    <span className="material-icons">
-                      search_off
-                    </span>
-
-                    <p>
-                      No batches found.
-                    </p>
-
-                  </td>
-
-                </tr>
-
-              )}
-
-            </tbody>
-
-          </table>
-
+        <div>
+          <h3>
+            {batches.reduce(
+              (total, batch) =>
+                total + (batch.studentCount || 0),
+              0
+            )}
+          </h3>
+          <p>Total Students</p>
         </div>
-
       </div>
 
     </div>
-  );
+
+    {/* Search and Status */}
+    <div className="batches-filter-card">
+      <div className="batches-filter">
+
+        <div className="batch-filter-group">
+          <label htmlFor="batchSearch">Search Batch</label>
+          <div className="batch-search-box">
+            <span className="material-icons">search</span>
+            <input
+              id="batchSearch"
+              type="text"
+              placeholder="Search by batch, course or trainer"
+            />
+          </div>
+        </div>
+
+        <div className="batch-filter-group">
+          <label htmlFor="batchStatus">Status</label>
+          <select id="batchStatus" defaultValue="">
+            <option value="">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+            <option value="Dropped">Dropped</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    {/* Batch List */}
+    <div className="batches-table-card">
+
+      <div className="batches-table-header">
+        <div>
+          <h4>Batch List</h4>
+          <span>{batches.length} batches</span>
+        </div>
+      </div>
+
+      <div className="batches-table-wrapper">
+        <table className="batches-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Batch</th>
+              <th>Course</th>
+              <th>Trainer</th>
+              <th>Students</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {batches.length > 0 ? (
+              batches.map((batch, index) => (
+                <tr key={batch._id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <div className="batch-name-cell">
+                      <div className="batch-icon">
+                        <span className="material-icons">
+                          book
+                        </span>
+                      </div>
+                      <strong>{batch.studentBatch}</strong>
+                    </div>
+                  </td>
+                  <td>{batch.course?.course || "Not assigned"}</td>
+                  <td>
+                    <div className="batch-trainer-cell">
+                      {batch.trainer?.name || "Not assigned"}
+                    </div>
+                  </td>
+                  <td>
+                    {batch.studentCount ?? "-"}
+                  </td>
+                  <td>
+                    {batch.startDate
+                      ? new Date(batch.startDate).toLocaleDateString("en-CA")
+                      : "-"}
+                  </td>
+                  <td>
+                    {batch.endDate
+                      ? new Date(batch.endDate).toLocaleDateString("en-CA")
+                      : "-"}
+                  </td>
+                  <td>
+                    <span className={`batch-status ${
+                      batch.status === "Completed"
+                        ? "batch-status-completed"
+                        : "batch-status-active"
+                    }`}>
+                      {batch.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="batches-no-data">
+                  <span className="material-icons">
+                    search_off
+                  </span>
+                  <p>No batches assigned to you.</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+);
+
 }
 
 export default Batches;

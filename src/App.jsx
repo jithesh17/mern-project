@@ -103,8 +103,6 @@ function App() {
           element={<AdminEditAllocation />}
         />
 
-        <Route path="/admin/sub-course" element={<AdminSubCourse />} />
-
         <Route path="/trainer/login" element={<TrainerLogin />} />
 
         <Route path="/admin/student" element={<AdminStudent />} />
@@ -129,7 +127,7 @@ function App() {
             </TrainerLayout>
           }
         />
-
+            
         <Route
           path="/trainer/attendance"
           element={

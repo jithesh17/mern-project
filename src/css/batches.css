@@ -965,3 +965,85 @@ body[data-theme-version="dark"] .batches-no-data p {
   }
 
 }
+
+
+/* Fix batches dashboard layout */
+
+.batches-page {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 10px 20px 25px !important;
+  box-sizing: border-box !important;
+}
+
+.batches-page .batch-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 20px !important;
+  width: 100% !important;
+  margin-bottom: 25px !important;
+}
+
+.batches-page .batch-stat {
+  display: flex !important;
+  align-items: center !important;
+  gap: 15px !important;
+  min-width: 0 !important;
+  min-height: 110px !important;
+  padding: 22px !important;
+  border-radius: 15px !important;
+}
+
+.batches-page .batch-search-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr) !important;
+  gap: 22px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-bottom: 22px !important;
+}
+
+.batches-page .batch-list-card {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.batches-page .batch-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+}
+
+.batches-page .batch-table th,
+.batches-page .batch-table td {
+  padding: 17px 14px !important;
+  white-space: nowrap !important;
+}
+
+.batches-page .batch-table tbody tr {
+  height: 68px;
+}
+
+.batches-page .batch-stat h2 {
+  margin: 0 0 6px !important;
+  font-size: 28px !important;
+}
+
+.batches-page .batch-stat p {
+  margin: 0 !important;
+}
+
+@media (max-width: 1100px) {
+  .batches-page .batch-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 650px) {
+  .batches-page .batch-stats,
+  .batches-page .batch-search-panel {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -1,234 +1,173 @@
-import { useState, useMemo } from "react";
-import AdminLayout from "../../components/AdminLayout";
-import {
-  initialTrainers,
-  initialAllocations,
-  initialStudents,
-} from "../../data/adminData";
+import { useEffect, useState } from "react";
 
+import AdminLayout from "../../components/AdminLayout";
+ 
 import "../../css/dashboard.css";
 import "../../css/theme.css";
 import "../../css/admin.css";
 
-const statusBadge = {
-  Active: "badge-success",
-  Completed: "badge-primary",
-  "On Hold": "badge-warning",
-  Dropped: "badge-danger",
-};
-
-function studentCountForBatch(batchName) {
-  return initialStudents.filter((student) => student.batch === batchName).length;
-}
-
 function AdminTrainerReport() {
+  const [trainerReports, setTrainerReports] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [trainerFilter, setTrainerFilter] = useState("All");
-  const [appliedFilter, setAppliedFilter] = useState("All");
+  const fetchTrainerReport = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/trainer-report"
+      );
 
-  const trainerRows = useMemo(() => {
-    return initialTrainers
-      .filter((trainer) => appliedFilter === "All" || trainer.name === appliedFilter)
-      .map((trainer) => {
-        const allocations = initialAllocations.filter(
-          (allocation) => allocation.trainer === trainer.name
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to fetch trainer report"
         );
-        const totalStudents = allocations.reduce(
-          (sum, allocation) => sum + studentCountForBatch(allocation.batch),
-          0
-        );
-        return { ...trainer, allocations, totalStudents };
-      });
-  }, [appliedFilter]);
+      }
 
-  function handleSearch() {
-    setAppliedFilter(trainerFilter);
-  }
+      console.log("TRAINER REPORT:", result);
 
-  function handleClear() {
-    setTrainerFilter("All");
-    setAppliedFilter("All");
-  }
+      setTrainerReports(result.data || []);
+    } catch (error) {
+      console.error("Trainer report error:", error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const summary = useMemo(() => {
-    const totalTrainers = initialTrainers.length;
-    const totalAllocations = initialAllocations.length;
-    const activeAllocations = initialAllocations.filter((a) => a.status === "Active").length;
-    return { totalTrainers, totalAllocations, activeAllocations };
+  useEffect(() => {
+    fetchTrainerReport();
   }, []);
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleDateString("en-GB");
+  };
 
   return (
     <AdminLayout>
-
       <div className="admin-page">
 
+        {/* HEADER */}
         <div className="admin-page-header">
           <div>
             <h2>Trainer Report</h2>
-            <p>Batch allocations and workload per trainer.</p>
+            <p>
+              Trainer allocation and batch details.
+            </p>
           </div>
         </div>
 
-
-        {/* Summary cards */}
-
-        <div className="row">
-
-          <div className="col-xl-4 col-md-6">
-            <div className="admin-stat-card admin-stat-purple">
-              <div className="admin-stat-icon">
-                <span className="material-icons">badge</span>
-              </div>
-              <div>
-                <div className="admin-stat-value">{summary.totalTrainers}</div>
-                <div className="admin-stat-label">Total Trainers</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-xl-4 col-md-6">
-            <div className="admin-stat-card admin-stat-blue">
-              <div className="admin-stat-icon">
-                <span className="material-icons">event_available</span>
-              </div>
-              <div>
-                <div className="admin-stat-value">{summary.totalAllocations}</div>
-                <div className="admin-stat-label">Total Allocations</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-xl-4 col-md-6">
-            <div className="admin-stat-card admin-stat-green">
-              <div className="admin-stat-icon">
-                <span className="material-icons">play_circle</span>
-              </div>
-              <div>
-                <div className="admin-stat-value">{summary.activeAllocations}</div>
-                <div className="admin-stat-label">Active Allocations</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-
-        {/* Trainer-wise table */}
-
+        {/* TABLE */}
         <div className="row">
           <div className="col-lg-12">
 
             <div className="card">
-
-              <div className="card-header">
-                <h4 className="card-title">Trainer Workload</h4>
-              </div>
-
               <div className="card-body">
 
-                <div className="row" style={{ marginBottom: "16px", alignItems: "flex-end" }}>
-
-                  <div className="col-md-4">
-                    <div className="admin-form-group" style={{ marginBottom: 0 }}>
-                      <label htmlFor="filter-trainer-name">Trainer Name</label>
-                      <select
-                        id="filter-trainer-name"
-                        value={trainerFilter}
-                        onChange={(event) => setTrainerFilter(event.target.value)}
-                      >
-                        <option value="All">All Trainers</option>
-                        {initialTrainers.map((trainer) => (
-                          <option key={trainer.id} value={trainer.name}>
-                            {trainer.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="col-md-4" style={{ display: "flex", gap: "10px" }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={handleSearch}
-                    >
-                      Search
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-light"
-                      onClick={handleClear}
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                </div>
-
-                {trainerRows.length === 0 ? (
+                {loading ? (
+                  <p>Loading trainer report...</p>
+                ) : trainerReports.length === 0 ? (
                   <div className="admin-empty">
-                    <span className="material-icons">badge</span>
-                    <p>No trainers match this filter.</p>
+                    <span className="material-icons">
+                      assessment
+                    </span>
+
+                    <p>
+                      No trainer reports found.
+                    </p>
                   </div>
                 ) : (
-                  <table className="table table-hover">
+                  <div className="table-responsive">
 
-                    <thead>
-                      <tr>
-                        <th>Trainer</th>
-                        <th>Department</th>
-                        <th>Batches</th>
-                        <th>Students</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    
-                    <tbody>
-                      {trainerRows.map((trainer) => (
-                        <tr key={trainer.id}>
-                          <td>{trainer.name}</td>
-                          <td>
-                            <span className="badge badge-primary">{trainer.department}</span>
-                          </td>
-                          <td>
-                            {trainer.allocations.length === 0 ? (
-                              "—"
-                            ) : (
-                              trainer.allocations.map((allocation) => allocation.batch).join(", ")
-                            )}
-                          </td>
-                          <td>{trainer.totalStudents}</td>
-                          <td>
-                            {trainer.allocations.length === 0 ? (
-                              <span className="badge badge-info">Unassigned</span>
-                            ) : (
-                              trainer.allocations.map((allocation) => (
-                                <span
-                                  key={allocation.id}
-                                  className={`badge ${statusBadge[allocation.status] || "badge-info"}`}
-                                  style={{ marginRight: "6px" }}
-                                >
-                                  {allocation.status}
-                                </span>
-                              ))
-                            )}
-                          </td>
+                    <table className="table table-hover">
+
+                      <thead>
+                        <tr>
+                          <th>S.NO</th>
+                          <th>TRAINER</th>
+                          <th>COURSE</th>
+                          <th>BATCH</th>
+                          <th>START DATE</th>
+                          <th>END DATE</th>
+                          <th>STATUS</th>
                         </tr>
-                      ))}
-                    </tbody>
+                      </thead>
 
-                  </table>
+                      <tbody>
+                        {trainerReports.map(
+                          (trainer, index) => {
+
+                            // First allocation
+                            const allocation =
+                              trainer.allocations?.[0];
+
+                            return (
+                              <tr key={trainer._id}>
+
+                                {/* S.NO */}
+                                <td>
+                                  {index + 1}
+                                </td>
+
+                                {/* TRAINER */}
+                                <td>
+                                  {trainer.name || "-"}
+                                </td>
+
+                                {/* COURSE */}
+                                <td>
+                                  {allocation?.course ||
+                                    trainer.course ||
+                                    "-"}
+                                </td>
+
+                                {/* BATCH */}
+                                <td>
+                                  {allocation?.studentBatch ||
+                                    "-"}
+                                </td>
+
+                                {/* START DATE */}
+                                <td>
+                                  {formatDate(
+                                    allocation?.startDate
+                                  )}
+                                </td>
+
+                                {/* END DATE */}
+                                <td>
+                                  {formatDate(
+                                    allocation?.endDate
+                                  )}
+                                </td>
+
+                                {/* STATUS */}
+                                <td>
+                                  <span className="badge badge-info">
+                                    {allocation?.status || "-"}
+                                  </span>
+                                </td>
+
+                              </tr>
+                            );
+                          }
+                        )}
+                      </tbody>
+
+                    </table>
+
+                  </div>
                 )}
 
               </div>
-
             </div>
 
           </div>
         </div>
 
       </div>
-
     </AdminLayout>
   );
 }
